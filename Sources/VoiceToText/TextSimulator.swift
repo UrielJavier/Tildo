@@ -71,6 +71,33 @@ enum TextSimulator {
         }
     }
 
+    /// Returns the screen-space frame of the currently focused text field, if available.
+    static func focusedElementFrame() -> NSRect? {
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedApp: AnyObject?
+        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedApplicationAttribute as CFString, &focusedApp) == .success else {
+            return nil
+        }
+        var focusedElement: AnyObject?
+        guard AXUIElementCopyAttributeValue(focusedApp as! AXUIElement, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success else {
+            return nil
+        }
+        let element = focusedElement as! AXUIElement
+        var posValue: AnyObject?
+        var sizeValue: AnyObject?
+        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &posValue) == .success,
+              AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeValue) == .success else {
+            return nil
+        }
+        var position = CGPoint.zero
+        var size = CGSize.zero
+        guard AXValueGetValue(posValue as! AXValue, .cgPoint, &position),
+              AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) else {
+            return nil
+        }
+        return NSRect(origin: position, size: size)
+    }
+
     /// Checks if accessibility permissions are granted.
     static var hasAccessibilityPermission: Bool {
         AXIsProcessTrusted()
