@@ -19,11 +19,8 @@ struct GeneralPanel: View {
                 Picker("", selection: $state.language) {
                     ForEach(Language.allCases, id: \.self) { Text($0.label).tag($0) }
                 }.labelsHidden()
-
-                Toggle(isOn: $state.translateToEnglish) {
-                    settingsRow("Translate to English", icon: "character.book.closed")
-                }
-                .toggleStyle(.switch)
+                Text("The language spoken in your audio. \"Auto\" detects it automatically.")
+                    .font(.caption).foregroundStyle(.tertiary)
             }
 
             settingsCard {

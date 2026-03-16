@@ -7,6 +7,7 @@ final class AppState {
         case idle = "Ready"
         case recording = "Recording..."
         case transcribing = "Transcribing..."
+        case processing = "Enhancing..."
         case error = "Error"
     }
 
@@ -15,16 +16,18 @@ final class AppState {
     var isModelLoaded = false
     var isLoadingModel = false
     var language: Language = .auto
-    var translateToEnglish = false
+    var translateToEnglish = false  // legacy, kept for history entries
+    var llmTranslateLanguage: Language?
     var mode: TranscriptionMode = .batch
     var model: WhisperModel = .base
     var outputMode: OutputMode = .typeText
     var hotkeyKeyCode: UInt16 = 1
-    var hotkeyModifiers: UInt = NSEvent.ModifierFlags([.command, .function]).rawValue
+    var hotkeyModifiers: UInt = NSEvent.ModifierFlags([.command, .shift]).rawValue
     var startSound: SoundEffect = .pop
     var stopSound: SoundEffect = .funk
     var notifyOnComplete = false
     var showFloatingWindow = true
+    var appTheme: AppTheme = .system
 
     // Prompt fields — composed into initial_prompt for whisper
     var promptContext: String = ""
@@ -32,6 +35,12 @@ final class AppState {
     var promptStyle: String = "Natural, conversacional"
     var promptPunctuation: String = "Usar puntuación correcta: comas, puntos, signos de interrogación"
     var promptInstructions: String = "Ignorar ruido de fondo y silencios"
+
+    // LLM post-processing
+    var llmProvider: LLMProvider = .claudeCode
+    var llmModel: String = LLMProvider.claudeCode.defaultModel
+    var llmPostProcessEnabled: Bool = false
+    var llmStylePrompt: String = ""
 
     // Text replacement rules applied after transcription
     var replacementRules: [ReplacementRule] = ReplacementRule.defaultRules
@@ -105,6 +114,7 @@ final class AppState {
     func resetToDefaults() {
         language = .auto
         translateToEnglish = false
+        llmTranslateLanguage = nil
         mode = .batch
         outputMode = .typeText
         hotkeyKeyCode = 1
@@ -113,12 +123,17 @@ final class AppState {
         stopSound = .funk
         notifyOnComplete = false
         showFloatingWindow = true
+        appTheme = .system
         promptContext = ""
         promptVocabulary = ""
         promptStyle = "Natural, conversacional"
         promptPunctuation = "Usar puntuación correcta: comas, puntos, signos de interrogación"
         promptInstructions = "Ignorar ruido de fondo y silencios"
         replacementRules = ReplacementRule.defaultRules
+        llmProvider = .claudeCode
+        llmModel = LLMProvider.claudeCode.defaultModel
+        llmPostProcessEnabled = false
+        llmStylePrompt = ""
         liveChunkInterval = 2.0
         liveOverlapMs = 500
         liveSilenceThreshold = 0.002
@@ -128,11 +143,14 @@ final class AppState {
     var isRecording: Bool { status == .recording }
     var isTranscribing: Bool { status == .transcribing }
 
+    var isProcessing: Bool { status == .processing }
+
     var statusIcon: String {
         switch status {
         case .idle: return "mic"
         case .recording: return "mic.fill"
         case .transcribing: return "text.bubble"
+        case .processing: return "sparkles"
         case .error: return "exclamationmark.triangle"
         }
     }

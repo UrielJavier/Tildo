@@ -18,6 +18,11 @@ extension AppState {
         static let promptPunctuation = "promptPunctuation"
         static let promptInstructions = "promptExtra"
         static let replacementRules = "replacementRules"
+        static let llmProvider = "llmProvider"
+        static let llmModel = "llmModel"
+        static let llmPostProcessEnabled = "llmPostProcessEnabled"
+        static let llmStylePrompt = "llmStylePrompt"
+        static let llmTranslateLanguage = "llmTranslateLanguage"
         static let history = "history"
         static let stats = "transcriptionStats"
         static let liveChunkInterval = "liveChunkInterval"
@@ -25,6 +30,7 @@ extension AppState {
         static let liveSilenceThreshold = "liveSilenceThreshold"
         static let liveSilenceTimeout = "liveSilenceTimeout"
         static let showFloatingWindow = "showFloatingWindow"
+        static let appTheme = "appTheme"
     }
 
     private static let defaults = UserDefaults.standard
@@ -48,6 +54,11 @@ extension AppState {
         if let data = try? JSONEncoder().encode(replacementRules) {
             Self.defaults.set(data, forKey: Keys.replacementRules)
         }
+        Self.defaults.set(llmProvider.rawValue, forKey: Keys.llmProvider)
+        Self.defaults.set(llmModel, forKey: Keys.llmModel)
+        Self.defaults.set(llmPostProcessEnabled, forKey: Keys.llmPostProcessEnabled)
+        Self.defaults.set(llmStylePrompt, forKey: Keys.llmStylePrompt)
+        Self.defaults.set(llmTranslateLanguage?.rawValue ?? "", forKey: Keys.llmTranslateLanguage)
         if let data = try? JSONEncoder().encode(history) {
             Self.defaults.set(data, forKey: Keys.history)
         }
@@ -59,6 +70,7 @@ extension AppState {
         Self.defaults.set(liveSilenceThreshold, forKey: Keys.liveSilenceThreshold)
         Self.defaults.set(liveSilenceTimeout, forKey: Keys.liveSilenceTimeout)
         Self.defaults.set(showFloatingWindow, forKey: Keys.showFloatingWindow)
+        Self.defaults.set(appTheme.rawValue, forKey: Keys.appTheme)
     }
 
     func restore() {
@@ -89,6 +101,21 @@ extension AppState {
            let restoredRules = try? JSONDecoder().decode([ReplacementRule].self, from: data) {
             replacementRules = restoredRules
         }
+        if let rawProvider = Self.defaults.string(forKey: Keys.llmProvider),
+           let restoredProvider = LLMProvider(rawValue: rawProvider) { llmProvider = restoredProvider }
+        if let restoredModel = Self.defaults.string(forKey: Keys.llmModel), !restoredModel.isEmpty {
+            llmModel = restoredModel
+        }
+        if Self.defaults.object(forKey: Keys.llmPostProcessEnabled) != nil {
+            llmPostProcessEnabled = Self.defaults.bool(forKey: Keys.llmPostProcessEnabled)
+        }
+        if let restoredStylePrompt = Self.defaults.string(forKey: Keys.llmStylePrompt) {
+            llmStylePrompt = restoredStylePrompt
+        }
+        if let rawLang = Self.defaults.string(forKey: Keys.llmTranslateLanguage), !rawLang.isEmpty,
+           let lang = Language(rawValue: rawLang) {
+            llmTranslateLanguage = lang
+        }
         if let data = Self.defaults.data(forKey: Keys.history),
            let restoredEntries = try? JSONDecoder().decode([TranscriptionEntry].self, from: data) {
             history = restoredEntries
@@ -112,5 +139,7 @@ extension AppState {
         if Self.defaults.object(forKey: Keys.showFloatingWindow) != nil {
             showFloatingWindow = Self.defaults.bool(forKey: Keys.showFloatingWindow)
         }
+        if let rawTheme = Self.defaults.string(forKey: Keys.appTheme),
+           let restoredTheme = AppTheme(rawValue: rawTheme) { appTheme = restoredTheme }
     }
 }

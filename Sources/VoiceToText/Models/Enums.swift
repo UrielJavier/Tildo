@@ -73,11 +73,60 @@ enum SoundEffect: String, CaseIterable {
     }
 }
 
+enum StylePreset: String, CaseIterable, Identifiable {
+    case none = "Custom"
+    case formal = "Formal"
+    case elegant = "Elegant"
+    case casual = "Casual"
+    case friendly = "Friendly"
+    case passive = "Passive-Aggressive"
+    case concise = "Concise"
+    case technical = "Technical"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .none:       return "pencil"
+        case .formal:     return "building.columns"
+        case .elegant:    return "sparkle"
+        case .casual:     return "cup.and.saucer"
+        case .friendly:   return "face.smiling"
+        case .passive:    return "theatermasks"
+        case .concise:    return "scissors"
+        case .technical:  return "wrench.and.screwdriver"
+        }
+    }
+
+    var prompt: String {
+        switch self {
+        case .none:
+            return ""
+        case .formal:
+            return "Rewrite in a formal, professional tone. Use proper grammar and polished language. Avoid contractions and colloquialisms."
+        case .elegant:
+            return "Rewrite with an elegant, sophisticated tone. Use refined vocabulary and graceful sentence structure. Aim for a literary quality."
+        case .casual:
+            return "Rewrite in a casual, relaxed tone. Use natural everyday language, contractions, and a conversational feel."
+        case .friendly:
+            return "Rewrite in a warm, friendly tone. Be approachable, positive, and kind. Make the reader feel welcome."
+        case .passive:
+            return "Rewrite in a passive-aggressive tone. Be polite on the surface but subtly sarcastic. Use phrases like \"as per my last message\" or \"just to clarify\"."
+        case .concise:
+            return "Make the text as concise as possible. Remove filler words, redundancy, and unnecessary detail. Keep only the essential meaning."
+        case .technical:
+            return "Rewrite in a precise, technical tone. Use clear and unambiguous language. Prefer specificity over generality."
+        }
+    }
+}
+
 enum SettingsSection: String, CaseIterable, Identifiable {
     case general = "General"
+    case appearance = "Appearance"
     case models = "Models"
     case prompt = "Prompt"
     case replacements = "Replacements"
+    case llm = "AI Enhance"
     case feedback = "Feedback"
     case recording = "Recording"
     case dashboard = "Metrics"
@@ -90,9 +139,11 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .general:      return "gearshape"
+        case .appearance:   return "paintbrush"
         case .models:       return "cube.box"
         case .prompt:       return "text.quote"
         case .replacements: return "arrow.2.squarepath"
+        case .llm:          return "sparkles"
         case .feedback:     return "bell.and.waves.left.and.right"
         case .recording:    return "waveform"
         case .dashboard:    return "chart.bar"

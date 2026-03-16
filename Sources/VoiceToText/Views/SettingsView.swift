@@ -45,7 +45,8 @@ struct SettingsView: View {
             else if oldValue == .recording { onStopMonitoring?() }
         }
         .onChange(of: state.language) { onSave() }
-        .onChange(of: state.translateToEnglish) { onSave() }
+        .onChange(of: state.appTheme) { onSave() }
+        .environment(\.themeColors, state.appTheme.colors)
         .onChange(of: state.outputMode) { onSave() }
         .onChange(of: state.startSound) { onSave() }
         .onChange(of: state.stopSound) { onSave() }
@@ -55,6 +56,9 @@ struct SettingsView: View {
         .onChange(of: state.liveOverlapMs) { onSave() }
         .onChange(of: state.liveSilenceThreshold) { onSave() }
         .onChange(of: state.liveSilenceTimeout) { onSave() }
+        .onChange(of: state.llmPostProcessEnabled) { onSave() }
+        .onChange(of: state.llmProvider) { onSave() }
+        .onChange(of: state.llmModel) { onSave() }
     }
 
     @ViewBuilder
@@ -67,6 +71,8 @@ struct SettingsView: View {
                          onResumeHotkey: onResumeHotkey,
                          onLoadModel: onLoadModel,
                          onUnloadModel: onUnloadModel)
+        case .appearance:
+            AppearancePanel(state: state, onSave: onSave)
         case .models:
             ModelsPanel(state: state,
                         onDownloadModel: onDownloadModel,
@@ -76,6 +82,8 @@ struct SettingsView: View {
             PromptPanel(state: state, onSave: onSave)
         case .replacements:
             ReplacementsPanel(state: state, onSave: onSave)
+        case .llm:
+            LLMPanel(state: state, onSave: onSave)
         case .feedback:
             FeedbackPanel(state: state)
         case .recording:

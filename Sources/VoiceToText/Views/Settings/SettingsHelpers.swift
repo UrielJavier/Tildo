@@ -1,13 +1,25 @@
 import SwiftUI
 
 func settingsCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-    VStack(alignment: .leading, spacing: 12, content: content)
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.opacity(0.6))
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.separator.opacity(0.4)))
+    ThemedSettingsCard(content: content)
+}
+
+private struct ThemedSettingsCard<Content: View>: View {
+    @Environment(\.themeColors) private var theme
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) { content }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(theme.cardBorder))
+    }
 }
 
 func settingsRow(_ title: String, icon: String, trailing: String? = nil) -> some View {
