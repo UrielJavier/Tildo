@@ -35,14 +35,14 @@ struct SettingsView: View {
             }
         }
         .onAppear {
-            if state.selectedSettingsSection == .recording { onStartMonitoring?() }
+            if state.selectedSettingsSection == .transcription { onStartMonitoring?() }
         }
         .onDisappear {
             onStopMonitoring?()
         }
         .onChange(of: state.selectedSettingsSection) { oldValue, newValue in
-            if newValue == .recording { onStartMonitoring?() }
-            else if oldValue == .recording { onStopMonitoring?() }
+            if newValue == .transcription { onStartMonitoring?() }
+            else if oldValue == .transcription { onStopMonitoring?() }
         }
         .onChange(of: state.language) { onSave() }
         .onChange(of: state.appTheme) { onSave() }
@@ -78,22 +78,16 @@ struct SettingsView: View {
                         onDownloadModel: onDownloadModel,
                         onLoadModel: onLoadModel,
                         onCancelDownload: onCancelDownload)
-        case .prompt:
-            PromptPanel(state: state, onSave: onSave)
+        case .transcription:
+            TranscriptionPanel(state: state, onSave: onSave)
         case .replacements:
             ReplacementsPanel(state: state, onSave: onSave)
         case .llm:
             LLMPanel(state: state, onSave: onSave)
-        case .feedback:
-            FeedbackPanel(state: state)
-        case .recording:
-            RecordingPanel(state: state)
         case .dashboard:
             DashboardPanel(state: state, onSave: onSave)
         case .history:
             HistoryView(state: state, onSave: onSave).padding(24)
-        case .privacy:
-            PrivacyPanel(state: state)
         case .about:
             AboutPanel(state: state, onSave: onSave, onHotkeyChange: onHotkeyChange)
         }

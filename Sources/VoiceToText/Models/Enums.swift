@@ -124,32 +124,26 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case general = "General"
     case appearance = "Appearance"
     case models = "Models"
-    case prompt = "Prompt"
+    case transcription = "Transcription"
     case replacements = "Replacements"
     case llm = "AI Enhance"
-    case feedback = "Feedback"
-    case recording = "Recording"
     case dashboard = "Metrics"
     case history = "History"
-    case privacy = "Privacy"
     case about = "About"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .general:      return "gearshape"
-        case .appearance:   return "paintbrush"
-        case .models:       return "cube.box"
-        case .prompt:       return "text.quote"
-        case .replacements: return "arrow.2.squarepath"
-        case .llm:          return "sparkles"
-        case .feedback:     return "bell.and.waves.left.and.right"
-        case .recording:    return "waveform"
-        case .dashboard:    return "chart.bar"
-        case .history:      return "clock.arrow.circlepath"
-        case .privacy:      return "lock.shield"
-        case .about:        return "info.circle"
+        case .general:       return "gearshape"
+        case .appearance:    return "paintbrush"
+        case .models:        return "cube.box"
+        case .transcription: return "waveform"
+        case .replacements:  return "arrow.2.squarepath"
+        case .llm:           return "sparkles"
+        case .dashboard:     return "chart.bar"
+        case .history:       return "clock.arrow.circlepath"
+        case .about:         return "info.circle"
         }
     }
 }
