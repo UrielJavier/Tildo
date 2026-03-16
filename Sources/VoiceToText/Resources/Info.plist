@@ -6,11 +6,41 @@
     <string>com.urieljavier.EchoWrite</string>
     <key>CFBundleName</key>
     <string>EchoWrite</string>
+    <key>CFBundleDisplayName</key>
+    <string>EchoWrite</string>
     <key>CFBundleExecutable</key>
     <string>EchoWrite</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.1.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>VoiceToText needs microphone access to record your voice for transcription.</string>
+    <string>EchoWrite needs microphone access to record your voice for transcription.</string>
+    <key>NSServices</key>
+    <array>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict>
+                <key>default</key>
+                <string>EchoWrite — Transcribe</string>
+            </dict>
+            <key>NSMessage</key>
+            <string>transcribeService</string>
+            <key>NSPortName</key>
+            <string>EchoWrite</string>
+            <key>NSSendTypes</key>
+            <array/>
+            <key>NSReturnTypes</key>
+            <array>
+                <string>NSStringPboardType</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
