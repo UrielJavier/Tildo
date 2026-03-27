@@ -42,6 +42,24 @@ Auto-detects or you choose: English, Spanish, French, German, Italian, Portugues
 - Microphone permission
 - Accessibility permission (so EchoWrite can type for you)
 
+### Install (pre-built binary)
+
+Download the latest `EchoWrite-x.x.x-arm64.zip` from the [Releases page](../../releases/latest), unzip it, and move `EchoWrite.app` to your Applications folder.
+
+**First launch — macOS will block it** because the app isn't notarized with an Apple Developer certificate. There are three ways to open it anyway:
+
+**Option A — Right-click (easiest)**
+Right-click `EchoWrite.app` → **Open** → click **Open** in the dialog. You only need to do this once.
+
+**Option B — System Settings**
+Try to open the app normally. macOS will block it. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
+
+**Option C — Terminal**
+```bash
+xattr -cr /Applications/EchoWrite.app
+```
+Then open the app normally.
+
 ### Build
 
 **1. Get the whisper.cpp framework**
