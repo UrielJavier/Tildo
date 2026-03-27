@@ -26,6 +26,11 @@ Auto-detects or you choose: English, Spanish, French, German, Italian, Portugues
 **Pick your model**
 21 Whisper models from Tiny (32 MB) to Large v3 Turbo (1.6 GB). Download and switch from within the app — smaller models are faster, larger ones are more accurate. Quantized versions (Q5, Q8) give you a good middle ground.
 
+**LLM post-processing**
+- Optionally pass transcribed text through an AI model to correct, reformat, or translate
+- Works with OpenAI, Anthropic, Groq, or Claude Code (no API key needed if you already have it installed)
+- Built-in style presets: formal, casual, bullet points, summary, and more
+
 **Smart details**
 - Auto-stops when you go silent (configurable timeout)
 - Text replacements after transcription ("arroba" becomes "@", "hashtag" becomes "#")
