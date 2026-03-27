@@ -1,6 +1,13 @@
 import Cocoa
 import CoreGraphics
 
+/// Holds a reference to the focused UI element at the moment recording started.
+struct RecordingTarget {
+    let element: AXUIElement
+    let pid: pid_t
+    let appName: String
+}
+
 enum TextSimulator {
     /// Types the given text at the current cursor position using CGEvent.
     /// Requires Accessibility permissions to be granted.
@@ -69,6 +76,39 @@ enum TextSimulator {
             keyDown?.post(tap: .cgAnnotatedSessionEventTap)
             keyUp?.post(tap: .cgAnnotatedSessionEventTap)
         }
+    }
+
+    /// Captures the currently focused element so text can be routed back to it later,
+    /// even after the user switches to another app.
+    static func captureCurrentTarget() -> RecordingTarget? {
+        guard hasAccessibilityPermission else { return nil }
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedApp: AnyObject?
+        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedApplicationAttribute as CFString, &focusedApp) == .success else { return nil }
+        let appElement = focusedApp as! AXUIElement
+
+        var pid: pid_t = 0
+        AXUIElementGetPid(appElement, &pid)
+
+        // Don't capture our own process as target
+        guard pid != ProcessInfo.processInfo.processIdentifier else { return nil }
+
+        var focusedElement: AnyObject?
+        AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focusedElement)
+        let element: AXUIElement = focusedElement != nil ? (focusedElement as! AXUIElement) : appElement
+
+        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "App"
+        return RecordingTarget(element: element, pid: pid, appName: appName)
+    }
+
+    /// Activates the target app and restores focus to the captured element.
+    static func focusTarget(_ target: RecordingTarget) {
+        guard let app = NSRunningApplication(processIdentifier: target.pid),
+              !app.isTerminated else { return }
+        app.activate()
+        usleep(120_000) // wait for app activation
+        AXUIElementSetAttributeValue(target.element, kAXFocusedAttribute as CFString, true as CFTypeRef)
+        usleep(50_000) // wait for element focus
     }
 
     /// Returns the screen-space frame of the currently focused text field, if available.

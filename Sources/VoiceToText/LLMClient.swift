@@ -45,9 +45,11 @@ actor LLMClient {
             process.standardOutput = stdout
             process.standardError = stderr
 
-            // Inherit PATH so claude can find node/npm
+            // claude is a Node.js script — ensure node is in PATH by prepending
+            // the directory that contains the claude binary (node lives there too).
+            let claudeDir = URL(fileURLWithPath: claudePath).deletingLastPathComponent().path
             var env = ProcessInfo.processInfo.environment
-            env["PATH"] = (env["PATH"] ?? "") + ":/usr/local/bin:/opt/homebrew/bin"
+            env["PATH"] = claudeDir + ":/usr/local/bin:/opt/homebrew/bin:" + (env["PATH"] ?? "")
             process.environment = env
 
             process.terminationHandler = { _ in

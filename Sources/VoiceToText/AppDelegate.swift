@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowDelegate: SettingsWindowDelegate?
 
     private var eventMonitor: Any?
+    private var recordingTarget: RecordingTarget?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         downloadManager = ModelDownloadManager(appState: appState) { [weak self] model in
@@ -53,9 +54,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch appState.outputMode {
         case .typeText:
             if hasAccess {
+                if let target = recordingTarget { TextSimulator.focusTarget(target) }
                 TextSimulator.simulateTyping(text: processed)
             } else {
                 TextSimulator.requestAccessibilityPermission()
+                if let target = recordingTarget { TextSimulator.focusTarget(target) }
                 TextSimulator.copyToClipboard(text: processed, autoPaste: true)
             }
         case .clipboard:
@@ -446,6 +449,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appState.isModelLoaded = false
     }
 
+    // MARK: - Silence Detection
+
+    /// Returns true if the average energy of the audio samples is below the silence threshold.
+    private func isSilent(_ samples: [Float]) -> Bool {
+        guard !samples.isEmpty else { return true }
+        let energy = samples.reduce(Float(0)) { $0 + abs($1) } / Float(samples.count)
+        return energy < Float(appState.liveSilenceThreshold)
+    }
+
     // MARK: - Recording
 
     func toggleRecording() async {
@@ -461,6 +473,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
             do {
+                recordingTarget = TextSimulator.captureCurrentTarget()
                 playStartSound()
                 try await Task.sleep(nanoseconds: 250_000_000)
                 try recorder.startRecording()
@@ -483,6 +496,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         stopRecordingTimer()
         let audioData = recorder.stopRecording()
         playStopSound()
+
+        // Skip transcription if the recording is just silence
+        guard !isSilent(audioData) else {
+            hideFloatingWindow()
+            appState.status = .idle
+            return
+        }
+
         appState.status = .transcribing
         do {
             var text = try await transcriber.transcribe(
@@ -605,6 +626,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         await MainActor.run {
                             if processed != self.liveSessionText, self.appState.outputMode == .typeText {
                                 let oldLength = self.appState.applyReplacements(self.liveSessionText).count
+                                if let target = self.recordingTarget { TextSimulator.focusTarget(target) }
                                 TextSimulator.deleteCharacters(count: oldLength)
                                 usleep(50_000)
                                 self.outputText(processed)
@@ -651,10 +673,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         liveTask = nil
         playStopSound()
         let remaining = recorder.stopRecording()
-        guard !remaining.isEmpty else {
+        // Skip transcription of remaining audio if empty or silent
+        guard !remaining.isEmpty, !isSilent(remaining) else {
             let finalText = await postProcessLiveSessionIfEnabled()
             if finalText != liveSessionText, appState.outputMode == .typeText {
                 let oldLength = appState.applyReplacements(liveSessionText).count
+                if let target = recordingTarget { TextSimulator.focusTarget(target) }
                 TextSimulator.deleteCharacters(count: oldLength)
                 usleep(50_000)
                 outputText(finalText)
@@ -675,6 +699,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let finalText = await postProcessLiveSessionIfEnabled()
             if finalText != liveSessionText {
                 let oldLength = appState.applyReplacements(liveSessionText).count
+                if let target = recordingTarget { TextSimulator.focusTarget(target) }
                 TextSimulator.deleteCharacters(count: oldLength)
                 usleep(50_000)
                 outputText(finalText)
