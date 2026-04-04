@@ -7,7 +7,6 @@ struct LLMPanel: View {
     @State private var apiKey: String = ""
     @State private var testResult: String?
     @State private var isTesting = false
-    @State private var selectedPreset: StylePreset = .none
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -20,16 +19,11 @@ struct LLMPanel: View {
                 modelPicker
                 apiKeySection
                 translateSection
-                presetSection
-                stylePromptSection
                 testSection
             }
         }
         .padding(24)
-        .onAppear {
-            loadApiKey()
-            selectedPreset = StylePreset.allCases.first { $0.prompt == state.llmStylePrompt && $0 != .none } ?? .none
-        }
+        .onAppear { loadApiKey() }
     }
 
     // MARK: - Subviews
@@ -160,57 +154,6 @@ struct LLMPanel: View {
         )
     }
 
-    private var presetSection: some View {
-        settingsCard {
-            HStack(spacing: 8) {
-                Image(systemName: "paintpalette")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 20)
-                Text("Style Preset").font(.callout.weight(.medium))
-            }
-
-            PresetGrid(selected: $selectedPreset) { preset in
-                selectedPreset = preset
-                if preset != .none {
-                    state.llmStylePrompt = preset.prompt
-                }
-                onSave()
-            }
-        }
-    }
-
-    private var stylePromptSection: some View {
-        settingsCard {
-            HStack(spacing: 8) {
-                Image(systemName: "text.quote")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 20)
-                Text("Style Instructions").font(.callout.weight(.medium))
-            }
-            TextField(
-                "e.g. Fix punctuation. Informal tone. Use \"tú\" instead of \"usted\".",
-                text: $state.llmStylePrompt,
-                axis: .vertical
-            )
-            .textFieldStyle(.plain)
-            .font(.callout)
-            .lineLimit(2...6)
-            .padding(8)
-            .background(RoundedRectangle(cornerRadius: 6).fill(.quaternary.opacity(0.5)))
-            .onChange(of: state.llmStylePrompt) {
-                if state.llmStylePrompt != selectedPreset.prompt {
-                    selectedPreset = .none
-                }
-                onSave()
-            }
-            Text("Pick a preset above or write your own instructions. Leave empty for default punctuation fixes.")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        }
-    }
-
     private var testSection: some View {
         settingsCard {
             HStack(spacing: 8) {
@@ -282,50 +225,6 @@ struct LLMPanel: View {
 }
 
 // MARK: - Extracted subviews
-
-private struct PresetGrid: View {
-    @Binding var selected: StylePreset
-    let onSelect: (StylePreset) -> Void
-
-    var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-            ForEach(StylePreset.allCases) { preset in
-                PresetButton(preset: preset, isSelected: selected == preset) {
-                    onSelect(preset)
-                }
-            }
-        }
-    }
-}
-
-private struct PresetButton: View {
-    let preset: StylePreset
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: preset.icon)
-                    .font(.system(size: 11))
-                Text(preset.rawValue)
-                    .font(.caption.weight(.medium))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.gray.opacity(0.15))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 1.5)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
 
 private struct TestResultView: View {
     let result: String

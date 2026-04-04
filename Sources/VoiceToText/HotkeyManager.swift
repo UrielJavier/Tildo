@@ -2,7 +2,9 @@ import Cocoa
 import Carbon
 
 private func log(_ msg: String) {
+    #if DEBUG
     fputs("[Hotkey] \(msg)\n", stderr)
+    #endif
 }
 
 final class HotkeyManager {

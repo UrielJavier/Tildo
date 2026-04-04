@@ -47,6 +47,7 @@ struct SettingsView: View {
         .onChange(of: state.language) { onSave() }
         .onChange(of: state.appTheme) { onSave() }
         .environment(\.themeColors, state.appTheme.colors)
+        .preferredColorScheme(state.appTheme.preferredColorScheme)
         .onChange(of: state.outputMode) { onSave() }
         .onChange(of: state.startSound) { onSave() }
         .onChange(of: state.stopSound) { onSave() }
@@ -84,6 +85,10 @@ struct SettingsView: View {
             ReplacementsPanel(state: state, onSave: onSave)
         case .llm:
             LLMPanel(state: state, onSave: onSave)
+        case .tones:
+            TonesPanel(state: state, onSave: onSave)
+        case .appRules:
+            AppRulesPanel(state: state, onSave: onSave)
         case .dashboard:
             DashboardPanel(state: state, onSave: onSave)
         case .history:

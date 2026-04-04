@@ -18,6 +18,10 @@ extension AppState {
         static let promptPunctuation = "promptPunctuation"
         static let promptInstructions = "promptExtra"
         static let replacementRules = "replacementRules"
+        static let appToneRules = "appToneRules"  // legacy read-only key for migration
+        static let tones = "tones"
+        static let appRules = "appRules"
+        static let defaultToneId = "defaultToneId"
         static let llmProvider = "llmProvider"
         static let llmModel = "llmModel"
         static let llmPostProcessEnabled = "llmPostProcessEnabled"
@@ -31,6 +35,7 @@ extension AppState {
         static let liveSilenceTimeout = "liveSilenceTimeout"
         static let showFloatingWindow = "showFloatingWindow"
         static let appTheme = "appTheme"
+        static let hasCompletedOnboarding = "hasCompletedOnboarding"
     }
 
     private static let defaults = UserDefaults.standard
@@ -54,6 +59,13 @@ extension AppState {
         if let data = try? JSONEncoder().encode(replacementRules) {
             Self.defaults.set(data, forKey: Keys.replacementRules)
         }
+        if let data = try? JSONEncoder().encode(tones) {
+            Self.defaults.set(data, forKey: Keys.tones)
+        }
+        if let data = try? JSONEncoder().encode(appRules) {
+            Self.defaults.set(data, forKey: Keys.appRules)
+        }
+        Self.defaults.set(defaultToneId?.uuidString, forKey: Keys.defaultToneId)
         Self.defaults.set(llmProvider.rawValue, forKey: Keys.llmProvider)
         Self.defaults.set(llmModel, forKey: Keys.llmModel)
         Self.defaults.set(llmPostProcessEnabled, forKey: Keys.llmPostProcessEnabled)
@@ -71,6 +83,7 @@ extension AppState {
         Self.defaults.set(liveSilenceTimeout, forKey: Keys.liveSilenceTimeout)
         Self.defaults.set(showFloatingWindow, forKey: Keys.showFloatingWindow)
         Self.defaults.set(appTheme.rawValue, forKey: Keys.appTheme)
+        Self.defaults.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding)
     }
 
     func restore() {
@@ -100,6 +113,40 @@ extension AppState {
         if let data = Self.defaults.data(forKey: Keys.replacementRules),
            let restoredRules = try? JSONDecoder().decode([ReplacementRule].self, from: data) {
             replacementRules = restoredRules
+        }
+        if let data = Self.defaults.data(forKey: Keys.tones),
+           let restoredTones = try? JSONDecoder().decode([AppTone].self, from: data) {
+            tones = restoredTones
+        }
+        if let data = Self.defaults.data(forKey: Keys.appRules),
+           let restoredRules = try? JSONDecoder().decode([AppRule].self, from: data) {
+            appRules = restoredRules
+        }
+        if let raw = Self.defaults.string(forKey: Keys.defaultToneId) {
+            defaultToneId = UUID(uuidString: raw)
+        }
+        // Migration: convert legacy appToneRules → tones + appRules
+        if tones.isEmpty {
+            if let data = Self.defaults.data(forKey: Keys.appToneRules),
+               let oldRules = try? JSONDecoder().decode([AppToneRule].self, from: data), !oldRules.isEmpty {
+                for rule in oldRules {
+                    let tone = AppTone(name: rule.appName + (rule.urlPattern.isEmpty ? "" : " (\(rule.urlPattern))"), stylePrompt: rule.stylePrompt)
+                    tones.append(tone)
+                    appRules.append(AppRule(appName: rule.appName, urlPattern: rule.urlPattern, toneId: tone.id, isEnabled: rule.isEnabled))
+                }
+            }
+            // Migrate global llmStylePrompt → default tone
+            if !llmStylePrompt.isEmpty && defaultToneId == nil {
+                let defaultTone = AppTone(name: "Default", stylePrompt: llmStylePrompt)
+                tones.append(defaultTone)
+                defaultToneId = defaultTone.id
+            }
+            // Seed built-in tones from StylePresets if still empty
+            if tones.isEmpty {
+                tones = StylePreset.allCases
+                    .filter { $0 != .none }
+                    .map { AppTone(name: $0.rawValue, stylePrompt: $0.prompt) }
+            }
         }
         if let rawProvider = Self.defaults.string(forKey: Keys.llmProvider),
            let restoredProvider = LLMProvider(rawValue: rawProvider) { llmProvider = restoredProvider }
@@ -141,5 +188,8 @@ extension AppState {
         }
         if let rawTheme = Self.defaults.string(forKey: Keys.appTheme),
            let restoredTheme = AppTheme(rawValue: rawTheme) { appTheme = restoredTheme }
+        if Self.defaults.object(forKey: Keys.hasCompletedOnboarding) != nil {
+            hasCompletedOnboarding = Self.defaults.bool(forKey: Keys.hasCompletedOnboarding)
+        }
     }
 }

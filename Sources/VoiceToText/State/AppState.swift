@@ -13,6 +13,7 @@ final class AppState {
 
     var status: Status = .idle
     var lastError: String?
+    var hasCompletedOnboarding: Bool = false
     var isModelLoaded = false
     var isLoadingModel = false
     var language: Language = .auto
@@ -44,6 +45,36 @@ final class AppState {
 
     // Text replacement rules applied after transcription
     var replacementRules: [ReplacementRule] = ReplacementRule.defaultRules
+
+    // Tone library + per-app rules
+    var tones: [AppTone] = []
+    var appRules: [AppRule] = []
+    var defaultToneId: UUID? = nil
+
+    // Legacy — kept for data migration from older versions. Not shown in UI.
+    var appToneRules: [AppToneRule] = []
+
+    /// Resolves the style prompt for a given app + URL.
+    /// Precedence: per-app URL rule > per-app rule > default tone > llmStylePrompt (legacy fallback).
+    func resolveStylePrompt(appName: String, url: String?) -> String {
+        let enabled = appRules.filter {
+            $0.isEnabled && $0.appName.lowercased() == appName.lowercased()
+        }
+        let matchedId: UUID?
+        if let url, let urlRule = enabled.first(where: {
+            !$0.urlPattern.isEmpty && url.lowercased().contains($0.urlPattern.lowercased())
+        }) {
+            matchedId = urlRule.toneId
+        } else if let appRule = enabled.first(where: { $0.urlPattern.isEmpty }) {
+            matchedId = appRule.toneId
+        } else {
+            matchedId = defaultToneId
+        }
+        if let id = matchedId, let tone = tones.first(where: { $0.id == id }) {
+            return tone.stylePrompt
+        }
+        return llmStylePrompt
+    }
 
     func applyReplacements(_ text: String) -> String {
         var result = text
@@ -130,6 +161,9 @@ final class AppState {
         promptPunctuation = "Usar puntuación correcta: comas, puntos, signos de interrogación"
         promptInstructions = "Ignorar ruido de fondo y silencios"
         replacementRules = ReplacementRule.defaultRules
+        tones = []
+        appRules = []
+        defaultToneId = nil
         llmProvider = .claudeCode
         llmModel = LLMProvider.claudeCode.defaultModel
         llmPostProcessEnabled = false

@@ -50,6 +50,16 @@ enum AppTheme: String, CaseIterable, Codable, Identifiable {
         case .dark:  return scheme == .dark
         }
     }
+
+    /// Forces the SwiftUI color scheme that ensures text contrast for this theme.
+    /// nil means follow the system (used for the .system theme).
+    var preferredColorScheme: ColorScheme? {
+        switch preferredAppearance {
+        case .light: return .light
+        case .dark:  return .dark
+        case .any:   return nil
+        }
+    }
 }
 
 struct ThemeColors {
@@ -68,14 +78,14 @@ struct ThemeColors {
 
     static let system = ThemeColors(
         accent: .accentColor,
-        floatingBackground: .white,
-        floatingText: Color(white: 0.2),
-        floatingSecondary: .gray,
-        waveformLow: Color(white: 0.75),
+        floatingBackground: Color(NSColor.windowBackgroundColor),
+        floatingText: Color(NSColor.labelColor),
+        floatingSecondary: Color(NSColor.secondaryLabelColor),
+        waveformLow: Color(NSColor.tertiaryLabelColor),
         waveformMid: .orange,
         waveformHigh: .red,
-        cardBackground: Color(white: 0.96),
-        cardBorder: Color(white: 0.88),
+        cardBackground: Color(NSColor.controlBackgroundColor),
+        cardBorder: Color(NSColor.separatorColor),
         sidebarAccent: .accentColor
     )
 

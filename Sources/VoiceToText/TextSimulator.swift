@@ -138,6 +138,31 @@ enum TextSimulator {
         return NSRect(origin: position, size: size)
     }
 
+    /// Returns the active tab URL for known browsers using AppleScript.
+    /// Returns nil for non-browser apps or if the query fails.
+    static func browserURL(for appName: String) -> String? {
+        let chromeFamily: Set<String> = [
+            "Google Chrome", "Google Chrome Canary", "Chromium",
+            "Brave Browser", "Arc", "Microsoft Edge", "Opera", "Vivaldi"
+        ]
+        let safariFamily: Set<String> = ["Safari", "Safari Technology Preview"]
+
+        let script: String
+        if chromeFamily.contains(appName) {
+            script = "tell application \"\(appName)\" to get URL of active tab of front window"
+        } else if safariFamily.contains(appName) {
+            script = "tell application \"\(appName)\" to get URL of current tab of front window"
+        } else {
+            return nil
+        }
+
+        guard let appleScript = NSAppleScript(source: script) else { return nil }
+        var error: NSDictionary?
+        let result = appleScript.executeAndReturnError(&error)
+        guard error == nil else { return nil }
+        return result.stringValue
+    }
+
     /// Checks if accessibility permissions are granted.
     static var hasAccessibilityPermission: Bool {
         AXIsProcessTrusted()

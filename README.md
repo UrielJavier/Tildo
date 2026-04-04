@@ -12,7 +12,7 @@ Built on [OpenAI's Whisper](https://github.com/openai/whisper) running locally v
 - **Works everywhere** — Text appears wherever your cursor is: emails, code editors, Slack, browsers, terminal. Any app.
 - **One hotkey** — Press your shortcut, talk, done. No window switching, no copy-pasting.
 - **Actually fast** — Whisper runs natively on Apple Silicon. A 30-second recording transcribes in under 2 seconds with the right model.
-- **Free and open source** — No API keys, no tokens, no monthly fees.
+- **Free and open source** — No subscriptions, no monthly fees. Whisper runs 100% locally. LLM post-processing is optional and uses your own API keys if you choose to enable it.
 
 ## Features
 
@@ -47,17 +47,26 @@ Auto-detects or you choose: English, Spanish, French, German, Italian, Portugues
 - Microphone permission
 - Accessibility permission (so EchoWrite can type for you)
 
+### Granting Permissions
+
+EchoWrite needs two permissions to work:
+
+- **Microphone** — Required to record your voice. macOS will prompt you on first use.
+- **Accessibility** — Required to type text into other apps. Go to **System Settings → Privacy & Security → Accessibility** and enable EchoWrite.
+
+If you skip Accessibility access, the app will transcribe your voice but won't be able to insert the text — you'll need to paste it manually instead.
+
 ### Install (pre-built binary)
 
 Download the latest `EchoWrite-x.x.x-arm64.zip` from the [Releases page](../../releases/latest), unzip it, and move `EchoWrite.app` to your Applications folder.
 
 **First launch — macOS will block it** because the app isn't notarized with an Apple Developer certificate. There are three ways to open it anyway:
 
-**Option A — Right-click (easiest)**
-Right-click `EchoWrite.app` → **Open** → click **Open** in the dialog. You only need to do this once.
-
-**Option B — System Settings**
+**Option A — System Settings (recommended on macOS 15 Sequoia)**
 Try to open the app normally. macOS will block it. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
+
+**Option B — Right-click (macOS 14 only)**
+Right-click `EchoWrite.app` → **Open** → click **Open** in the dialog. You only need to do this once. Note: this no longer works on macOS 15 Sequoia.
 
 **Option C — Terminal**
 ```bash
@@ -76,7 +85,14 @@ cmake -B build -DBUILD_SHARED_LIBS=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
 cmake --build build --config Release
 ```
 
-Package the output as `whisper.xcframework` and place it in `Frameworks/`.
+Then package the output as an xcframework and place it in `Frameworks/`:
+
+```bash
+xcodebuild -create-xcframework \
+  -library build/src/libwhisper.dylib \
+  -headers include/ \
+  -output Frameworks/whisper.xcframework
+```
 
 **2. Build and run**
 

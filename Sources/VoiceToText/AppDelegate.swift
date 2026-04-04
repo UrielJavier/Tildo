@@ -1,5 +1,6 @@
 import SwiftUI
 import UserNotifications
+import AVFoundation
 import whisper
 
 @MainActor
@@ -19,6 +20,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var eventMonitor: Any?
     private var recordingTarget: RecordingTarget?
+    private var recordingTargetURL: String?
+    private var onboardingWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         downloadManager = ModelDownloadManager(appState: appState) { [weak self] model in
@@ -28,10 +31,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupHotkey()
         setupStatusItemRightClick()
         registerService()
+        showOnboardingIfNeeded()
         if !TextSimulator.hasAccessibilityPermission {
             TextSimulator.requestAccessibilityPermission()
         }
         Task { await loadModel() }
+    }
+
+    private func showOnboardingIfNeeded() {
+        guard !appState.hasCompletedOnboarding else { return }
+
+        let view = OnboardingView(
+            appState: appState,
+            onStartMonitoring: { [weak self] in self?.startAudioMonitoring() },
+            onStopMonitoring: { [weak self] in self?.stopAudioMonitoring() },
+            onPauseHotkey: { [weak self] in self?.hotkeyManager?.unregister() },
+            onResumeHotkey: { [weak self] in self?.hotkeyManager?.register() },
+            onComplete: { [weak self] in
+                guard let self else { return }
+                appState.hasCompletedOnboarding = true
+                appState.save()
+                onboardingWindow?.close()
+                onboardingWindow = nil
+            }
+        )
+
+        let controller = NSHostingController(rootView: view)
+        let window = NSWindow(contentViewController: controller)
+        window.title = "Welcome to EchoWrite"
+        window.styleMask = [.titled, .closable]
+        window.isMovableByWindowBackground = true
+        window.setContentSize(NSSize(width: 540, height: 440))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        activateApp()
+        onboardingWindow = window
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -50,16 +84,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let processed = appState.applyReplacements(text)
         guard !processed.isEmpty else { return }
         let hasAccess = TextSimulator.hasAccessibilityPermission
-        fputs("[Output] mode=\(appState.outputMode) access=\(hasAccess) text=\"\(processed.prefix(40))\"\n", stderr)
+        #if DEBUG
+        fputs("[Output] mode=\(appState.outputMode) access=\(hasAccess)\n", stderr)
+        #endif
         switch appState.outputMode {
         case .typeText:
             if hasAccess {
                 if let target = recordingTarget { TextSimulator.focusTarget(target) }
                 TextSimulator.simulateTyping(text: processed)
             } else {
-                TextSimulator.requestAccessibilityPermission()
-                if let target = recordingTarget { TextSimulator.focusTarget(target) }
-                TextSimulator.copyToClipboard(text: processed, autoPaste: true)
+                // Without Accessibility permission, CGEventPost (used for typing AND Cmd+V paste)
+                // will silently fail. Copy to clipboard as a reliable fallback and prompt the user.
+                TextSimulator.copyToClipboard(text: processed, autoPaste: false)
+                appState.lastError = "Accesibilidad no concedida — texto copiado al portapapeles. Pega con ⌘V. Ve a Ajustes > Privacidad > Accesibilidad para habilitar EchoWrite."
             }
         case .clipboard:
             TextSimulator.copyToClipboard(text: processed)
@@ -378,8 +415,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             state: appState,
             onSave: { [weak self] in self?.appState.save() },
             onHotkeyChange: { [weak self] in self?.applyHotkey() },
-            onPauseHotkey: { [weak self] in self?.hotkeyManager?.isEnabled = false },
-            onResumeHotkey: { [weak self] in self?.hotkeyManager?.isEnabled = true },
+            onPauseHotkey: { [weak self] in self?.hotkeyManager?.unregister() },
+            onResumeHotkey: { [weak self] in self?.hotkeyManager?.register() },
             onStartMonitoring: { [weak self] in self?.startAudioMonitoring() },
             onStopMonitoring: { [weak self] in self?.stopAudioMonitoring() },
             onDownloadModel: { [weak self] model in self?.downloadAndLoadModel(model) },
@@ -474,6 +511,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             do {
                 recordingTarget = TextSimulator.captureCurrentTarget()
+                recordingTargetURL = nil
+                if let target = recordingTarget {
+                    Task.detached { [appName = target.appName] in
+                        let url = TextSimulator.browserURL(for: appName)
+                        await MainActor.run { self.recordingTargetURL = url }
+                    }
+                }
                 playStartSound()
                 try await Task.sleep(nanoseconds: 250_000_000)
                 try recorder.startRecording()
@@ -510,7 +554,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 audioData: audioData, language: appState.language.rawValue,
                 translate: false,
                 initialPrompt: appState.composedPrompt)
-            text = await postProcessIfEnabled(text)
+            text = await postProcessIfEnabled(text, stylePrompt: resolvedStylePrompt())
             hideFloatingWindow()
             outputText(text)
             appState.status = .idle
@@ -530,7 +574,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appState.llmTranslateLanguage?.label
     }
 
-    private func postProcessIfEnabled(_ text: String) async -> String {
+    private func resolvedStylePrompt() -> String {
+        appState.resolveStylePrompt(appName: recordingTarget?.appName ?? "", url: recordingTargetURL)
+    }
+
+    private func postProcessIfEnabled(_ text: String, stylePrompt: String) async -> String {
         guard appState.llmPostProcessEnabled,
               !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return text }
         appState.status = .processing
@@ -539,17 +587,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 text: text,
                 provider: appState.llmProvider,
                 model: appState.llmModel,
-                stylePrompt: appState.llmStylePrompt,
+                stylePrompt: stylePrompt,
                 translateTo: translateToLabel
             )
         } catch {
             appState.lastError = "AI enhance failed: \(error.localizedDescription)"
-            return text // fallback to original
+            return text
         }
     }
 
-    /// Post-process the accumulated live session text. Replaces liveSessionText in place.
-    private func postProcessLiveSessionIfEnabled() async -> String {
+    /// Post-process the accumulated live session text.
+    private func postProcessLiveSessionIfEnabled(stylePrompt: String) async -> String {
         guard appState.llmPostProcessEnabled, !liveSessionText.isEmpty else { return liveSessionText }
         appState.status = .processing
         do {
@@ -557,7 +605,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 text: liveSessionText,
                 provider: appState.llmProvider,
                 model: appState.llmModel,
-                stylePrompt: appState.llmStylePrompt,
+                stylePrompt: stylePrompt,
                 translateTo: translateToLabel
             )
         } catch {
@@ -566,11 +614,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Non-isolated version for use from detached tasks
-    nonisolated func postProcessLiveIfEnabled(_ text: String) async -> String {
+    /// Non-isolated version for use from detached tasks.
+    nonisolated func postProcessLiveIfEnabled(_ text: String, stylePrompt: String) async -> String {
         guard !text.isEmpty else { return text }
-        let (enabled, provider, model, stylePrompt, translateTo) = await MainActor.run {
-            (appState.llmPostProcessEnabled, appState.llmProvider, appState.llmModel, appState.llmStylePrompt, appState.llmTranslateLanguage?.label)
+        let (enabled, provider, model, translateTo) = await MainActor.run {
+            (appState.llmPostProcessEnabled, appState.llmProvider, appState.llmModel, appState.llmTranslateLanguage?.label)
         }
         guard enabled else { return text }
         await MainActor.run { appState.status = .processing }
@@ -587,6 +635,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Live Transcription
 
     private func startLiveLoop() {
+        let stylePrompt = resolvedStylePrompt()
         liveTask = Task.detached { [weak self] in
             var promptTokens: [whisper_token] = []
             var silenceSteps = 0
@@ -622,7 +671,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                             self.playStopSound()
                         }
                         let finalText = await MainActor.run { self.liveSessionText }
-                        let processed = await self.postProcessLiveIfEnabled(finalText)
+                        let processed = await self.postProcessLiveIfEnabled(finalText, stylePrompt: stylePrompt)
                         await MainActor.run {
                             if processed != self.liveSessionText, self.appState.outputMode == .typeText {
                                 let oldLength = self.appState.applyReplacements(self.liveSessionText).count
@@ -672,10 +721,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         await liveTask?.value
         liveTask = nil
         playStopSound()
+        let stylePrompt = resolvedStylePrompt()
         let remaining = recorder.stopRecording()
         // Skip transcription of remaining audio if empty or silent
         guard !remaining.isEmpty, !isSilent(remaining) else {
-            let finalText = await postProcessLiveSessionIfEnabled()
+            let finalText = await postProcessLiveSessionIfEnabled(stylePrompt: stylePrompt)
             if finalText != liveSessionText, appState.outputMode == .typeText {
                 let oldLength = appState.applyReplacements(liveSessionText).count
                 if let target = recordingTarget { TextSimulator.focusTarget(target) }
@@ -696,7 +746,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 translate: false,
                 initialPrompt: appState.composedPrompt)
             liveSessionText += text
-            let finalText = await postProcessLiveSessionIfEnabled()
+            let finalText = await postProcessLiveSessionIfEnabled(stylePrompt: stylePrompt)
             if finalText != liveSessionText {
                 let oldLength = appState.applyReplacements(liveSessionText).count
                 if let target = recordingTarget { TextSimulator.focusTarget(target) }

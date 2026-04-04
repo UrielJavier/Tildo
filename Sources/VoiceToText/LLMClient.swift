@@ -95,13 +95,14 @@ actor LLMClient {
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
 
-        // Include nvm/homebrew paths
+        // Include nvm/homebrew paths — resolve nvm node bin dynamically
         var env = ProcessInfo.processInfo.environment
-        let extra = [
-            "/usr/local/bin",
-            "/opt/homebrew/bin",
-            NSHomeDirectory() + "/.nvm/versions/node/v22.17.1/bin",
-        ]
+        var extra = ["/usr/local/bin", "/opt/homebrew/bin"]
+        let nvmHome = env["NVM_DIR"] ?? (NSHomeDirectory() + "/.nvm")
+        if let version = try? String(contentsOfFile: nvmHome + "/alias/default", encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines), !version.isEmpty {
+            extra.append(nvmHome + "/versions/node/\(version)/bin")
+        }
         env["PATH"] = (env["PATH"] ?? "") + ":" + extra.joined(separator: ":")
         process.environment = env
 
