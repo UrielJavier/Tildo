@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onStopMonitoring: { [weak self] in self?.stopAudioMonitoring() },
             onPauseHotkey: { [weak self] in self?.hotkeyManager?.unregister() },
             onResumeHotkey: { [weak self] in self?.hotkeyManager?.register() },
+            onDownloadModel: { [weak self] model in self?.downloadAndLoadModel(model) },
             onComplete: { [weak self] in
                 guard let self else { return }
                 appState.hasCompletedOnboarding = true
@@ -58,7 +59,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let controller = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: controller)
-        window.title = "Welcome to EchoWrite"
+        window.title = "Welcome to Tildo"
         window.styleMask = [.titled, .closable]
         window.isMovableByWindowBackground = true
         window.setContentSize(NSSize(width: 540, height: 440))
@@ -96,7 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // Without Accessibility permission, CGEventPost (used for typing AND Cmd+V paste)
                 // will silently fail. Copy to clipboard as a reliable fallback and prompt the user.
                 TextSimulator.copyToClipboard(text: processed, autoPaste: false)
-                appState.lastError = "Accesibilidad no concedida — texto copiado al portapapeles. Pega con ⌘V. Ve a Ajustes > Privacidad > Accesibilidad para habilitar EchoWrite."
+                appState.lastError = "Accesibilidad no concedida — texto copiado al portapapeles. Pega con ⌘V. Ve a Ajustes > Privacidad > Accesibilidad para habilitar Tildo."
             }
         case .clipboard:
             TextSimulator.copyToClipboard(text: processed)
@@ -355,9 +356,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for (origin, _) in placements {
             let view = FloatingRecordingView(appState: appState)
 
-            let controller = NSHostingController(rootView: view)
-            controller.view.wantsLayer = true
-            controller.view.layer?.backgroundColor = .clear
+            let hostingView = MovableFloatingHostingView(rootView: view)
+            hostingView.wantsLayer = true
+            hostingView.layer?.backgroundColor = .clear
 
             let panel = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
@@ -365,7 +366,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            panel.contentViewController = controller
+            panel.contentView = hostingView
             panel.level = .screenSaver
             panel.backgroundColor = .clear
             panel.isOpaque = false
@@ -776,4 +777,10 @@ final class SettingsWindowDelegate: NSObject, NSWindowDelegate {
     private let onClose: () -> Void
     init(onClose: @escaping () -> Void) { self.onClose = onClose }
     func windowWillClose(_ notification: Notification) { onClose() }
+}
+
+// NSHostingView subclass that lets isMovableByWindowBackground work
+// from any point on the pill, not just where SwiftUI draws content.
+final class MovableFloatingHostingView: NSHostingView<FloatingRecordingView> {
+    override var mouseDownCanMoveWindow: Bool { true }
 }

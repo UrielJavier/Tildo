@@ -17,8 +17,8 @@ struct AboutPanel: View {
                         .font(.system(size: 28))
                         .foregroundStyle(DS.Colors.moss)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("EchoWrite")
-                            .font(DS.Fonts.serif(18))
+                        Text("Tildo")
+                            .font(DS.Fonts.sans(18, weight: .semibold))
                             .foregroundStyle(DS.Colors.ink)
                         Text("Local speech-to-text for macOS")
                             .font(DS.Fonts.sans(13))
@@ -34,7 +34,7 @@ struct AboutPanel: View {
                     .foregroundStyle(DS.Colors.oliveGray)
 
                 Link(destination: URL(string: "https://github.com/urieljavier/EchoWrite")!) {
-                    linkRow("EchoWrite on GitHub")
+                    linkRow("Tildo on GitHub")
                 }
                 Link(destination: URL(string: "https://github.com/urieljavier/EchoWrite/issues/new")!) {
                     linkRow("Report an issue")
