@@ -6,64 +6,49 @@ struct AppearancePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Appearance", subtitle: "Theme, sounds and visual feedback")
+            panelHero(icon: "paintbrush", title: "Appearance", subtitle: "Floating window style, sounds, and visual feedback")
 
             settingsCard {
-                settingsRow("Theme", icon: "paintbrush")
-                ThemeGrid(selected: $state.appTheme, onSave: onSave)
+                settingsRow("Floating window theme", icon: "rectangle.on.rectangle")
+                ThemePicker(selected: $state.appTheme, onSave: onSave)
             }
-
-            settingsCard {
-                settingsRow("Preview", icon: "eye")
-                ThemePreview(theme: state.appTheme.colors)
-            }
-
-            // MARK: - Sounds (merged from FeedbackPanel)
 
             settingsCard {
                 settingsRow("Sounds", icon: "speaker.wave.2")
                 SoundPicker(label: "Start", icon: "play.circle", selection: $state.startSound)
-                Divider()
+                DSDivider()
                 SoundPicker(label: "Stop", icon: "stop.circle", selection: $state.stopSound)
                 Text("Set to None to disable sound feedback.")
-                    .font(.caption).foregroundStyle(.tertiary)
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.stoneGray)
             }
 
-            // MARK: - Visual feedback (merged from FeedbackPanel)
-
             settingsCard {
-                settingsRow("Visual feedback", icon: "rectangle.on.rectangle")
-                Toggle(isOn: $state.showFloatingWindow) {
-                    settingsRow("Show floating window while recording", icon: "rectangle.on.rectangle")
-                }
-                .toggleStyle(.switch)
+                DSToggle(title: "Show floating window while recording", icon: "rectangle.on.rectangle", isOn: $state.showFloatingWindow)
                 Text("Displays a small always-on-top overlay with timer and audio waveform while recording.")
-                    .font(.caption).foregroundStyle(.tertiary)
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.stoneGray)
 
-                Divider()
+                DSDivider()
 
-                Toggle(isOn: $state.notifyOnComplete) {
-                    settingsRow("Notify on completion", icon: "bell")
-                }
-                .toggleStyle(.switch)
+                DSToggle(title: "Notify on completion", icon: "bell", isOn: $state.notifyOnComplete)
                 Text("Shows a system notification when transcription finishes.")
-                    .font(.caption).foregroundStyle(.tertiary)
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.stoneGray)
             }
         }
         .padding(24)
     }
 }
 
-private struct ThemeGrid: View {
+private struct ThemePicker: View {
     @Binding var selected: AppTheme
     let onSave: () -> Void
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+        HStack(spacing: 12) {
             ForEach(AppTheme.allCases) { theme in
-                let compatible = theme.isCompatible(with: colorScheme)
-                ThemeCell(theme: theme, isSelected: selected == theme, disabled: !compatible) {
+                ThemeCard(theme: theme, isSelected: selected == theme) {
                     selected = theme
                     onSave()
                 }
@@ -72,85 +57,53 @@ private struct ThemeGrid: View {
     }
 }
 
-private struct ThemeCell: View {
+private struct ThemeCard: View {
     let theme: AppTheme
     let isSelected: Bool
-    var disabled: Bool = false
     let action: () -> Void
+
+    private let barHeights: [CGFloat] = [4, 8, 12, 9, 14, 7, 10, 5]
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
-                // Color swatch
-                HStack(spacing: 0) {
-                    theme.colors.floatingBackground
-                    theme.colors.accent
-                    theme.colors.cardBackground
+            VStack(spacing: 10) {
+                HStack(spacing: 8) {
+                    Circle().fill(.red).frame(width: 6, height: 6)
+                    HStack(spacing: 1.5) {
+                        ForEach(Array(barHeights.enumerated()), id: \.offset) { i, h in
+                            RoundedRectangle(cornerRadius: 0.5)
+                                .fill(i > 5 ? theme.colors.waveformHigh : i > 3 ? theme.colors.waveformMid : theme.colors.waveformLow)
+                                .frame(width: 2, height: h)
+                        }
+                    }
+                    .frame(height: 14)
                 }
-                .frame(height: 32)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(isSelected ? theme.colors.accent : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(theme.colors.floatingBackground)
+                        .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
                 )
 
                 Text(theme.rawValue)
-                    .font(.caption.weight(isSelected ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? .primary : .secondary)
+                    .font(DS.Fonts.sans(13, weight: isSelected ? .medium : .regular))
+                    .foregroundStyle(isSelected ? DS.Colors.ink : DS.Colors.oliveGray)
             }
-            .padding(6)
+            .padding(14)
+            .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? theme.colors.accent.opacity(0.1) : Color.clear)
+                RoundedRectangle(cornerRadius: DS.Radius.md)
+                    .fill(isSelected ? DS.Colors.warmSand : Color.clear)
             )
-            .opacity(disabled ? 0.35 : 1.0)
             .overlay(
-                Group {
-                    if disabled {
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.secondary.opacity(0.2), lineWidth: 1, antialiased: true)
-                    }
-                }
+                RoundedRectangle(cornerRadius: DS.Radius.md)
+                    .strokeBorder(
+                        isSelected ? DS.Colors.moss : DS.Colors.borderCream,
+                        lineWidth: isSelected ? 2 : 1
+                    )
             )
         }
         .buttonStyle(.plain)
-        .disabled(disabled)
-        .help(disabled ? "Poor contrast in current appearance mode" : "")
-    }
-}
-
-private struct ThemePreview: View {
-    let theme: ThemeColors
-
-    var body: some View {
-        // Floating window preview
-        HStack(spacing: 10) {
-            Circle()
-                .fill(.red)
-                .frame(width: 8, height: 8)
-
-            // Mini waveform
-            HStack(spacing: 1.5) {
-                ForEach(0..<12, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(i > 9 ? theme.waveformHigh : i > 6 ? theme.waveformMid : theme.waveformLow)
-                        .frame(width: 2, height: CGFloat.random(in: 3...14))
-                }
-            }
-            .frame(height: 14)
-
-            Text("01:23")
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .foregroundColor(theme.floatingSecondary)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(theme.floatingBackground)
-                .shadow(color: .black.opacity(0.1), radius: 6, y: 2)
-        )
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
     }
 }

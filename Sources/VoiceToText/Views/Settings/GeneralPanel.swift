@@ -12,24 +12,42 @@ struct GeneralPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("General", subtitle: "Language, output and shortcut preferences")
+            panelHero(icon: "gearshape", title: "General", subtitle: "Language, output and shortcut preferences")
 
             settingsCard {
                 settingsRow("Language", icon: "globe")
-                Picker("", selection: $state.language) {
-                    ForEach(Language.allCases, id: \.self) { Text($0.label).tag($0) }
-                }.labelsHidden()
+                Menu {
+                    ForEach(Language.allCases, id: \.self) { lang in
+                        Button(lang.label) { state.language = lang }
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(state.language.label)
+                            .font(DS.Fonts.sans(13))
+                            .foregroundStyle(DS.Colors.charcoalWarm)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 9))
+                            .foregroundStyle(DS.Colors.stoneGray)
+                    }
+                    .dsMenuLabel()
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
                 Text("The language spoken in your audio. \"Auto\" detects it automatically.")
-                    .font(.caption).foregroundStyle(.tertiary)
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.stoneGray)
             }
 
             settingsCard {
                 settingsRow("Output mode", icon: "text.cursor")
-                Picker("", selection: $state.outputMode) {
-                    ForEach(OutputMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                }.pickerStyle(.segmented).labelsHidden()
+                DSSegmentedControl(
+                    options: OutputMode.allCases,
+                    label: { $0.rawValue },
+                    selection: $state.outputMode
+                )
                 Text("Type simulates keystrokes. Clipboard copies the text.")
-                    .font(.caption).foregroundStyle(.tertiary)
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.stoneGray)
             }
 
             settingsCard {
@@ -43,13 +61,14 @@ struct GeneralPanel: View {
             }
 
             settingsCard {
-                Toggle(isOn: Binding(
-                    get: { SMAppService.mainApp.status == .enabled },
-                    set: { v in try? v ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister() }
-                )) {
-                    settingsRow("Launch at login", icon: "power")
-                }
-                .toggleStyle(.switch)
+                DSToggle(
+                    title: "Launch at login",
+                    icon: "power",
+                    isOn: Binding(
+                        get: { SMAppService.mainApp.status == .enabled },
+                        set: { v in try? v ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister() }
+                    )
+                )
             }
 
             settingsCard {
@@ -57,28 +76,36 @@ struct GeneralPanel: View {
                 if state.isLoadingModel {
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
-                        Text("Loading \(state.model.rawValue)...").font(.callout).foregroundStyle(.secondary)
+                        Text("Loading \(state.model.rawValue)...")
+                            .font(DS.Fonts.sans(14))
+                            .foregroundStyle(DS.Colors.oliveGray)
                     }
                 } else if state.isModelLoaded {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("\(state.model.rawValue) loaded").font(.callout)
-                            Text("Using \(state.model.ramUsage) of RAM").font(.caption).foregroundStyle(.secondary)
+                            Text("\(state.model.rawValue) loaded")
+                                .font(DS.Fonts.sans(14))
+                            Text("Using \(state.model.ramUsage) of RAM")
+                                .font(DS.Fonts.sans(12))
+                                .foregroundStyle(DS.Colors.stoneGray)
                         }
                         Spacer()
                         Button("Unload") { onUnloadModel?() }
-                            .buttonStyle(.bordered).controlSize(.small)
+                            .buttonStyle(.dsSecondary)
                     }
                 } else {
                     HStack {
-                        Text("No model in memory").font(.callout).foregroundStyle(.secondary)
+                        Text("No model in memory")
+                            .font(DS.Fonts.sans(14))
+                            .foregroundStyle(DS.Colors.stoneGray)
                         Spacer()
                         Button("Load") { onLoadModel?(state.model) }
-                            .buttonStyle(.bordered).controlSize(.small)
+                            .buttonStyle(.dsSecondary)
                     }
                 }
-                Text("Unloading frees RAM when you're not using transcription. Loading takes a few seconds.")
-                    .font(.caption).foregroundStyle(.tertiary)
+                Text("Unloading frees RAM when you're not using transcription.")
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.stoneGray)
             }
         }
         .padding(24)

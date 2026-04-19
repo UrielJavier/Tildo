@@ -6,7 +6,7 @@ struct TranscriptionPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("Transcription", subtitle: "Audio tuning and transcription hints. Changes apply on the next session.")
+            panelHero(icon: "waveform", title: "Transcription", subtitle: "Audio tuning and transcription hints. Changes apply on the next session.")
 
             // MARK: - Audio tuning
 

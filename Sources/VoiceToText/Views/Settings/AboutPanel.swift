@@ -9,27 +9,29 @@ struct AboutPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionHeader("About")
+            panelHero(icon: "info.circle", title: "About")
 
             settingsCard {
                 HStack(spacing: 12) {
                     Image(systemName: "mic.badge.xmark")
                         .font(.system(size: 28))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(DS.Colors.moss)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("EchoWrite").font(.title3.weight(.semibold))
+                        Text("EchoWrite")
+                            .font(DS.Fonts.serif(18))
+                            .foregroundStyle(DS.Colors.ink)
                         Text("Local speech-to-text for macOS")
-                            .font(.callout).foregroundStyle(.secondary)
+                            .font(DS.Fonts.sans(13))
+                            .foregroundStyle(DS.Colors.oliveGray)
                     }
                 }
             }
 
-            // MARK: - Feedback & Issues
-
             settingsCard {
                 settingsRow("Feedback & Issues", icon: "exclamationmark.bubble")
                 Text("Found a bug or have a suggestion? Open an issue on GitHub.")
-                    .font(.callout).foregroundStyle(.secondary)
+                    .font(DS.Fonts.sans(13))
+                    .foregroundStyle(DS.Colors.oliveGray)
 
                 Link(destination: URL(string: "https://github.com/urieljavier/EchoWrite")!) {
                     linkRow("EchoWrite on GitHub")
@@ -39,27 +41,24 @@ struct AboutPanel: View {
                 }
             }
 
-            // MARK: - Privacy (merged from PrivacyPanel)
-
             settingsCard {
                 settingsRow("Permissions", icon: "lock.shield")
                 Text("Everything runs locally on your Mac. No audio, text or data is ever sent to any server.")
-                    .font(.callout).foregroundStyle(.secondary)
+                    .font(DS.Fonts.sans(13))
+                    .foregroundStyle(DS.Colors.oliveGray)
 
-                Divider()
+                DSDivider()
 
                 permissionRow(
-                    icon: "mic",
-                    name: "Microphone",
+                    icon: "mic", name: "Microphone",
                     reason: "Records your voice for local transcription. Audio is processed entirely on-device by whisper.cpp and discarded after transcription — it is never stored or transmitted.",
                     api: "AVCaptureDevice (AVFoundation)"
                 )
 
-                Divider()
+                DSDivider()
 
                 permissionRow(
-                    icon: "accessibility",
-                    name: "Accessibility",
+                    icon: "accessibility", name: "Accessibility",
                     reason: "Required for two features:",
                     details: [
                         ("keyboard", "Global hotkey — intercepts your shortcut (\(state.hotkeyLabel)) via CGEvent tap so it works in any app without the system beep."),
@@ -68,7 +67,7 @@ struct AboutPanel: View {
                     api: "CGEvent.tapCreate / CGEvent (CoreGraphics)"
                 )
 
-                Divider()
+                DSDivider()
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
@@ -76,83 +75,68 @@ struct AboutPanel: View {
                             .font(.system(size: 12))
                             .foregroundStyle(.green)
                             .frame(width: 20)
-                        Text("No network access required").font(.callout.weight(.medium))
+                        Text("No network access required")
+                            .font(DS.Fonts.sans(14, weight: .medium))
+                            .foregroundStyle(DS.Colors.charcoalWarm)
                     }
-                    Text("The app only connects to the internet when you explicitly download a model from Settings > Models. All transcription is offline.")
-                        .font(.caption).foregroundStyle(.tertiary)
+                    Text("The app only connects to the internet when you explicitly download a model from Settings > Models.")
+                        .font(DS.Fonts.sans(12))
+                        .foregroundStyle(DS.Colors.stoneGray)
                 }
             }
 
             settingsCard {
                 settingsRow("Data & Storage", icon: "folder.badge.gearshape")
-
-                dataRow(
-                    icon: "brain",
-                    label: "Models",
-                    path: "~/.voicetotext/models/",
-                    detail: "Downloaded model files (binary weights, no code). You can delete them from Settings > Models."
-                )
-
-                Divider()
-
-                dataRow(
-                    icon: "gearshape",
-                    label: "Settings",
-                    path: "UserDefaults (standard)",
-                    detail: "Preferences, prompt, replacement rules and history. Reset from About > Reset."
-                )
-
+                dataRow(icon: "brain", label: "Models", path: "~/.voicetotext/models/",
+                        detail: "Downloaded model files (binary weights, no code). You can delete them from Settings > Models.")
+                DSDivider()
+                dataRow(icon: "gearshape", label: "Settings", path: "UserDefaults (standard)",
+                        detail: "Preferences, prompt, replacement rules and history. Reset from About > Reset.")
                 Text("No other files are created. No analytics, telemetry or crash reports are collected.")
-                    .font(.caption).foregroundStyle(.tertiary)
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.stoneGray)
             }
 
             settingsCard {
                 settingsRow("Trust chain", icon: "checkmark.shield")
                 VStack(alignment: .leading, spacing: 6) {
                     trustStep("1", "OpenAI trains and publishes the original Whisper models (open-source, MIT license)")
-                    trustStep("2", "Georgi Gerganov (ggerganov) converts them to GGML format via whisper.cpp, the most used C/C++ inference engine for Whisper")
+                    trustStep("2", "Georgi Gerganov converts them to GGML format via whisper.cpp, the most used C/C++ inference engine for Whisper")
                     trustStep("3", "Models are hosted on HuggingFace and downloaded over HTTPS to ~/.voicetotext/models/")
                 }
 
-                Text("Model files are binary weights (numbers, no executable code). The source code of whisper.cpp is fully open and auditable.")
-                    .font(.caption).foregroundStyle(.tertiary)
+                Text("Model files are binary weights (numbers, no executable code).")
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.stoneGray)
 
-                Divider()
+                DSDivider()
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Link(destination: URL(string: "https://github.com/ggml-org/whisper.cpp")!) {
-                        linkRow("whisper.cpp on GitHub")
-                    }
-                    Link(destination: URL(string: "https://huggingface.co/ggerganov/whisper.cpp")!) {
-                        linkRow("Models on HuggingFace")
-                    }
-                    Link(destination: URL(string: "https://github.com/openai/whisper")!) {
-                        linkRow("OpenAI Whisper (MIT License)")
-                    }
-                    Link(destination: URL(string: "https://developer.apple.com/documentation/coregraphics/cgevent")!) {
-                        linkRow("Apple CGEvent documentation")
-                    }
-                    Link(destination: URL(string: "https://developer.apple.com/documentation/avfoundation/avcapturedevice")!) {
-                        linkRow("Apple AVCaptureDevice documentation")
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach([
+                        ("whisper.cpp on GitHub", "https://github.com/ggml-org/whisper.cpp"),
+                        ("Models on HuggingFace", "https://huggingface.co/ggerganov/whisper.cpp"),
+                        ("OpenAI Whisper (MIT License)", "https://github.com/openai/whisper"),
+                    ], id: \.0) { item in
+                        Link(destination: URL(string: item.1)!) {
+                            linkRow(item.0)
+                        }
                     }
                 }
             }
 
             Spacer().frame(height: 8)
 
-            // MARK: - Reset
-
             settingsCard {
                 settingsRow("Reset", icon: "arrow.counterclockwise")
                 Text("Restore all settings to their original values. This will not delete downloaded models or history.")
-                    .font(.callout).foregroundStyle(.secondary)
-                Button(role: .destructive) {
+                    .font(DS.Fonts.sans(13))
+                    .foregroundStyle(DS.Colors.oliveGray)
+                Button {
                     showResetConfirmation = true
                 } label: {
                     Label("Reset all settings to defaults", systemImage: "arrow.counterclockwise")
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(.dsDestructive)
                 .alert("Reset all settings?", isPresented: $showResetConfirmation) {
                     Button("Cancel", role: .cancel) {}
                     Button("Reset", role: .destructive) {
@@ -168,77 +152,58 @@ struct AboutPanel: View {
         .padding(24)
     }
 
-    // MARK: - Helpers
-
     private func linkRow(_ text: String) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: "link").font(.system(size: 11))
-            Text(text).font(.callout)
+            Image(systemName: "link").font(.system(size: 10))
+            Text(text).font(DS.Fonts.sans(13))
         }
+        .foregroundStyle(DS.Colors.moss)
     }
 
-    private func permissionRow(
-        icon: String, name: String, reason: String,
-        details: [(icon: String, text: String)]? = nil,
-        api: String
-    ) -> some View {
+    private func permissionRow(icon: String, name: String, reason: String,
+                               details: [(icon: String, text: String)]? = nil, api: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.orange)
-                    .frame(width: 20)
-                Text(name).font(.callout.weight(.medium))
+                Image(systemName: icon).font(.system(size: 12)).foregroundStyle(.orange).frame(width: 20)
+                Text(name).font(DS.Fonts.sans(14, weight: .medium)).foregroundStyle(DS.Colors.charcoalWarm)
             }
-            Text(reason).font(.caption).foregroundStyle(.secondary)
+            Text(reason).font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.oliveGray)
             if let details {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(details, id: \.icon) { item in
                         HStack(alignment: .top, spacing: 6) {
-                            Image(systemName: item.icon)
-                                .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
-                                .frame(width: 16)
-                                .padding(.top, 2)
-                            Text(item.text)
-                                .font(.caption).foregroundStyle(.secondary)
+                            Image(systemName: item.icon).font(.system(size: 10)).foregroundStyle(DS.Colors.stoneGray).frame(width: 16).padding(.top, 2)
+                            Text(item.text).font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.oliveGray)
                         }
                     }
                 }
                 .padding(.leading, 4)
             }
-            Text("API: \(api)")
-                .font(.caption2).foregroundStyle(.quaternary)
+            Text("API: \(api)").font(DS.Fonts.sans(10)).foregroundStyle(DS.Colors.stoneGray.opacity(0.6))
         }
     }
 
     private func dataRow(icon: String, label: String, path: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 20)
-                Text(label).font(.callout.weight(.medium))
+                Image(systemName: icon).font(.system(size: 12)).foregroundStyle(DS.Colors.stoneGray).frame(width: 20)
+                Text(label).font(DS.Fonts.sans(14, weight: .medium)).foregroundStyle(DS.Colors.charcoalWarm)
             }
-            Text(path)
-                .font(.caption.monospaced())
-                .foregroundStyle(.tertiary)
-                .textSelection(.enabled)
-            Text(detail)
-                .font(.caption).foregroundStyle(.secondary)
+            Text(path).font(.system(size: 11, design: .monospaced)).foregroundStyle(DS.Colors.stoneGray).textSelection(.enabled)
+            Text(detail).font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.oliveGray)
         }
     }
 
     private func trustStep(_ number: String, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text(number)
-                .font(.caption2.weight(.bold))
+                .font(DS.Fonts.sans(11, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 18, height: 18)
-                .background(Circle().fill(Color.secondary.opacity(0.5)))
+                .background(Circle().fill(DS.Colors.stoneGray.opacity(0.5)))
             Text(text)
-                .font(.callout).foregroundStyle(.secondary)
+                .font(DS.Fonts.sans(13))
+                .foregroundStyle(DS.Colors.oliveGray)
         }
     }
 }
