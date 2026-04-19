@@ -14,40 +14,40 @@ struct SettingsView: View {
     var onCancelDownload: (() -> Void)?
 
     var body: some View {
-        NavigationSplitView {
-            List(SettingsSection.allCases, selection: $state.selectedSettingsSection) { section in
-                Label(section.rawValue, systemImage: section.icon)
-                    .tag(section)
-            }
-            .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 140, ideal: 160, max: 180)
-        } detail: {
-            if state.selectedSettingsSection == .history {
-                detailContent
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .disabled(state.isRecording || state.isTranscribing)
-            } else {
-                ScrollView {
+        HStack(spacing: 0) {
+            SettingsSidebar(selection: $state.selectedSettingsSection)
+                .frame(width: 200)
+
+            Rectangle()
+                .fill(DS.Colors.line)
+                .frame(width: 1)
+
+            Group {
+                if state.selectedSettingsSection == .history {
                     detailContent
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .disabled(state.isRecording || state.isTranscribing)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                } else {
+                    ScrollView {
+                        detailContent
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
+            .background(DS.Colors.paper)
+            .disabled(state.isRecording || state.isTranscribing)
         }
+        .preferredColorScheme(.light)
+        .environment(\.themeColors, state.appTheme.colors)
         .onAppear {
             if state.selectedSettingsSection == .transcription { onStartMonitoring?() }
         }
-        .onDisappear {
-            onStopMonitoring?()
-        }
+        .onDisappear { onStopMonitoring?() }
         .onChange(of: state.selectedSettingsSection) { oldValue, newValue in
             if newValue == .transcription { onStartMonitoring?() }
             else if oldValue == .transcription { onStopMonitoring?() }
         }
         .onChange(of: state.language) { onSave() }
         .onChange(of: state.appTheme) { onSave() }
-        .environment(\.themeColors, state.appTheme.colors)
-        .preferredColorScheme(state.appTheme.preferredColorScheme)
         .onChange(of: state.outputMode) { onSave() }
         .onChange(of: state.startSound) { onSave() }
         .onChange(of: state.stopSound) { onSave() }
@@ -83,12 +83,8 @@ struct SettingsView: View {
             TranscriptionPanel(state: state, onSave: onSave)
         case .replacements:
             ReplacementsPanel(state: state, onSave: onSave)
-        case .llm:
-            LLMPanel(state: state, onSave: onSave)
-        case .tones:
-            TonesPanel(state: state, onSave: onSave)
-        case .appRules:
-            AppRulesPanel(state: state, onSave: onSave)
+        case .ai:
+            AIPanel(state: state, onSave: onSave)
         case .dashboard:
             DashboardPanel(state: state, onSave: onSave)
         case .history:
@@ -96,5 +92,90 @@ struct SettingsView: View {
         case .about:
             AboutPanel(state: state, onSave: onSave, onHotkeyChange: onHotkeyChange)
         }
+    }
+}
+
+// MARK: - Sidebar
+
+private struct SettingsSidebar: View {
+    @Binding var selection: SettingsSection
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Brand header
+            HStack(spacing: 6) {
+                Text("∼")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(DS.Colors.moss)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Tildo")
+                        .font(DS.Fonts.sans(13, weight: .semibold))
+                        .foregroundStyle(DS.Colors.ink)
+                    Text("Settings")
+                        .font(DS.Fonts.sans(10.5))
+                        .foregroundStyle(DS.Colors.ink3)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 18)
+            .padding(.bottom, 14)
+
+            Rectangle()
+                .fill(DS.Colors.line)
+                .frame(height: 1)
+                .padding(.bottom, 8)
+
+            VStack(spacing: 1) {
+                ForEach(SettingsSection.allCases) { section in
+                    SidebarItem(
+                        section: section,
+                        isSelected: selection == section,
+                        action: { selection = section }
+                    )
+                }
+            }
+            .padding(.horizontal, 4)
+
+            Spacer()
+        }
+        .background(DS.Colors.panel)
+    }
+}
+
+private struct SidebarItem: View {
+    let section: SettingsSection
+    let isSelected: Bool
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: section.icon)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(isSelected ? DS.Colors.ink : DS.Colors.ink3)
+                    .frame(width: 16, alignment: .center)
+                Text(section.rawValue)
+                    .font(DS.Fonts.sans(12.5, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? DS.Colors.ink : DS.Colors.ink2)
+                Spacer()
+            }
+            .padding(.leading, 10)
+            .padding(.trailing, 6)
+            .frame(height: 32)
+            .background(
+                Group {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(DS.Colors.paper)
+                    } else if isHovered {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(DS.Colors.lineSoft)
+                    }
+                }
+            )
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
     }
 }
