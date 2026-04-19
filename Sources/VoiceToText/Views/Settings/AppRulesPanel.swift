@@ -6,136 +6,249 @@ struct AppRulesPanel: View {
     let onSave: () -> Void
 
     @State private var showAddSheet = false
+    @State private var editingRule: AppRule? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("App Rules", subtitle: "Assign a tone per app or set a global default.")
+        VStack(alignment: .leading, spacing: 0) {
+            panelHero(icon: "app.badge", title: "App Rules",
+                      subtitle: "Assign a tone per app. Rules are checked in order — first match wins.")
+                .padding(.horizontal, 32)
+                .padding(.top, 28)
 
-            defaultToneSection
-
-            if !state.appRules.isEmpty {
-                perAppSection
-            }
-
-            HStack(spacing: 8) {
-                Button {
-                    showAddSheet = true
-                } label: {
-                    Label("Add rule", systemImage: "plus.circle.fill").font(.callout)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    defaultToneCard
+                    evaluationHint
+                    toolbar
+                    if !state.appRules.isEmpty {
+                        rulesTable
+                    }
+                    footerNote
+                    Spacer().frame(height: 16)
                 }
-                .buttonStyle(.bordered)
-                .disabled(state.tones.isEmpty)
-
-                if state.tones.isEmpty {
-                    Text("Create tones first in the Tones section.")
-                        .font(.caption).foregroundStyle(.tertiary)
-                }
+                .padding(.horizontal, 32)
+                .padding(.vertical, 20)
             }
         }
-        .padding(24)
+        .onChange(of: state.appRules) { onSave() }
         .sheet(isPresented: $showAddSheet) {
             AppRuleEditSheet(tones: state.tones, rule: nil) { newRule in
                 state.appRules.append(newRule)
                 onSave()
             }
         }
-    }
-
-    // MARK: - Default tone
-
-    private var defaultToneSection: some View {
-        settingsCard {
-            HStack {
-                settingsRow("Default tone", icon: "sparkles")
-                Spacer()
-                Picker("", selection: Binding(
-                    get: { state.defaultToneId },
-                    set: { state.defaultToneId = $0; onSave() }
-                )) {
-                    Text("None").tag(Optional<UUID>.none)
-                    if !state.tones.isEmpty { Divider() }
-                    ForEach(state.tones) { tone in
-                        Text(tone.name).tag(Optional<UUID>.some(tone.id))
-                    }
-                }
-                .labelsHidden()
-                .fixedSize()
-            }
-            Text("Applied when no per-app rule matches.")
-                .font(.caption).foregroundStyle(.tertiary)
-        }
-    }
-
-    // MARK: - Per-app rules
-
-    private var perAppSection: some View {
-        settingsCard {
-            Text("Per-app rules").font(.callout.weight(.medium))
-            Divider()
-            VStack(spacing: 0) {
-                ForEach(state.appRules) { rule in
-                    AppRuleRow(
-                        rule: rule,
-                        toneName: state.tones.first(where: { $0.id == rule.toneId })?.name ?? "—",
-                        onToggle: {
-                            if let idx = state.appRules.firstIndex(where: { $0.id == rule.id }) {
-                                state.appRules[idx].isEnabled.toggle()
-                                onSave()
-                            }
-                        },
-                        onDelete: {
-                            state.appRules.removeAll { $0.id == rule.id }
-                            onSave()
-                        }
-                    )
-                    if rule.id != state.appRules.last?.id {
-                        Divider().padding(.leading, 36)
-                    }
+        .sheet(item: $editingRule) { rule in
+            AppRuleEditSheet(tones: state.tones, rule: rule) { updated in
+                if let idx = state.appRules.firstIndex(where: { $0.id == updated.id }) {
+                    state.appRules[idx] = updated
+                    onSave()
                 }
             }
         }
+    }
+
+    // MARK: - Default tone card
+
+    private var defaultToneCard: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8).fill(DS.Colors.accentSoft).frame(width: 32, height: 32)
+                Image(systemName: "sparkles").font(.system(size: 14)).foregroundStyle(DS.Colors.accent)
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Default tone").font(DS.Fonts.sans(12.5, weight: .medium)).foregroundStyle(DS.Colors.ink)
+                Text("Applied when no app rule matches").font(DS.Fonts.sans(11)).foregroundStyle(DS.Colors.ink3)
+            }
+            Spacer()
+            Menu {
+                Button("None") { state.defaultToneId = nil; onSave() }
+                if !state.tones.isEmpty { Divider() }
+                ForEach(state.tones) { tone in
+                    Button(tone.name) { state.defaultToneId = tone.id; onSave() }
+                }
+            } label: {
+                HStack(spacing: 5) {
+                    Text(state.tones.first(where: { $0.id == state.defaultToneId })?.name ?? "None")
+                        .font(DS.Fonts.sans(13)).foregroundStyle(DS.Colors.ink)
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(DS.Colors.ink3)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(DS.Colors.bg)
+                .clipShape(RoundedRectangle(cornerRadius: 7))
+                .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(DS.Colors.line2, lineWidth: 1))
+            }
+            .menuStyle(.borderlessButton).fixedSize()
+        }
+        .padding(14)
+        .background(DS.Colors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(DS.Colors.line, lineWidth: 1))
+    }
+
+    // MARK: - Evaluation hint
+
+    private var evaluationHint: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(DS.Colors.ink3)
+            Text("Rules are checked top to bottom. The first match wins.")
+                .font(DS.Fonts.sans(11.5)).foregroundStyle(DS.Colors.ink3)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(DS.Colors.bg)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(DS.Colors.line2, style: StrokeStyle(lineWidth: 1, dash: [4]))
+        )
+    }
+
+    // MARK: - Toolbar
+
+    private var toolbar: some View {
+        HStack {
+            Text("\(state.appRules.filter { $0.isEnabled }.count) enabled · \(state.appRules.count) total")
+                .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink2)
+            Spacer()
+            Button { showAddSheet = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
+                    Text("Add rule").font(DS.Fonts.sans(12, weight: .medium))
+                }
+            }
+            .buttonStyle(.dsPrimary)
+            .disabled(state.tones.isEmpty)
+        }
+    }
+
+    // MARK: - Rules table
+
+    private var rulesTable: some View {
+        VStack(spacing: 0) {
+            // Header row
+            HStack(spacing: 10) {
+                Color.clear.frame(width: 20)
+                Color.clear.frame(width: 32)
+                Text("APP / MATCH")
+                    .font(.system(size: 10, weight: .semibold)).foregroundStyle(DS.Colors.ink3).tracking(0.8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("TONE")
+                    .font(.system(size: 10, weight: .semibold)).foregroundStyle(DS.Colors.ink3).tracking(0.8)
+                    .frame(width: 110, alignment: .leading)
+                Color.clear.frame(width: 36)
+                Color.clear.frame(width: 24)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(DS.Colors.bg)
+            DSDivider()
+
+            ForEach(Array(state.appRules.enumerated()), id: \.element.id) { i, rule in
+                RuleRow(
+                    rule: $state.appRules[i],
+                    toneName: state.tones.first(where: { $0.id == rule.toneId })?.name ?? "—",
+                    tones: state.tones,
+                    onEdit: { editingRule = rule },
+                    onDelete: {
+                        state.appRules.removeAll { $0.id == rule.id }
+                        onSave()
+                    },
+                    onToneChange: { toneId in
+                        state.appRules[i].toneId = toneId
+                        onSave()
+                    }
+                )
+                if i < state.appRules.count - 1 { DSDivider() }
+            }
+        }
+        .background(DS.Colors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(DS.Colors.line, lineWidth: 1))
+    }
+
+    // MARK: - Footer note
+
+    private var footerNote: some View {
+        Text("Match by app name or URL (browsers only). Patterns support * wildcards.")
+            .font(DS.Fonts.sans(11)).foregroundStyle(DS.Colors.ink3).lineSpacing(1.5)
     }
 }
 
-// MARK: - Rule Row
+// MARK: - Rule row
 
-private struct AppRuleRow: View {
-    let rule: AppRule
+private struct RuleRow: View {
+    @Binding var rule: AppRule
     let toneName: String
-    let onToggle: () -> Void
+    let tones: [AppTone]
+    let onEdit: () -> Void
     let onDelete: () -> Void
+    let onToneChange: (UUID) -> Void
 
     var body: some View {
         HStack(spacing: 10) {
-            AppIconImage(appName: rule.appName).frame(width: 26, height: 26)
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(rule.appName).font(.callout.weight(.medium))
-                    if !rule.urlPattern.isEmpty {
-                        Text(rule.urlPattern)
-                            .font(.caption).foregroundStyle(.secondary)
-                            .padding(.horizontal, 5).padding(.vertical, 2)
-                            .background(Capsule().fill(.quaternary))
-                    }
+            // Drag handle (visual)
+            VStack(spacing: 3) {
+                ForEach(0..<3, id: \.self) { _ in
+                    Circle().fill(DS.Colors.ink3).frame(width: 3, height: 3)
                 }
-                Text(toneName).font(.caption).foregroundStyle(.tertiary)
             }
+            .frame(width: 20).opacity(0.4)
 
-            Spacer()
+            // App icon
+            AppIconImage(appName: rule.appName)
+                .frame(width: 32, height: 32)
+                .background(DS.Colors.bg)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(DS.Colors.line, lineWidth: 1))
 
-            Toggle("", isOn: Binding(get: { rule.isEnabled }, set: { _ in onToggle() }))
-                .toggleStyle(.switch).controlSize(.mini).labelsHidden()
+            // App name + match pattern
+            VStack(alignment: .leading, spacing: 2) {
+                Text(rule.appName.isEmpty ? "—" : rule.appName)
+                    .font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink)
+                let pattern = rule.urlPattern.isEmpty ? "app: \(rule.appName)" : "url: \(rule.urlPattern)"
+                Text(pattern)
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .foregroundStyle(DS.Colors.ink3).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button(action: onDelete) {
-                Image(systemName: "minus.circle.fill").font(.callout).foregroundStyle(.red.opacity(0.6))
-            }.buttonStyle(.plain)
+            // Inline tone picker
+            Menu {
+                ForEach(tones) { tone in
+                    Button(tone.name) { onToneChange(tone.id) }
+                }
+            } label: {
+                HStack(spacing: 5) {
+                    Text(toneName).font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink).lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(DS.Colors.ink3)
+                }
+                .padding(.horizontal, 8).padding(.vertical, 5)
+                .background(DS.Colors.bg)
+                .clipShape(RoundedRectangle(cornerRadius: 7))
+                .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(DS.Colors.line2, lineWidth: 1))
+            }
+            .menuStyle(.borderlessButton)
+            .frame(width: 110)
+
+            // Toggle
+            DSToggleTrack(isOn: $rule.isEnabled).scaleEffect(0.8).frame(width: 36, height: 18)
+
+            // More menu
+            Menu {
+                Button("Edit…", action: onEdit)
+                Divider()
+                Button("Delete", role: .destructive, action: onDelete)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 12)).foregroundStyle(DS.Colors.ink3)
+                    .frame(width: 24, height: 24)
+            }
+            .menuStyle(.borderlessButton).frame(width: 24)
         }
-        .padding(.vertical, 8)
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .opacity(rule.isEnabled ? 1 : 0.55)
     }
 }
 
-// MARK: - Add Rule Sheet
+// MARK: - Add / Edit sheet
 
 private struct AppRuleEditSheet: View {
     let tones: [AppTone]
@@ -168,65 +281,56 @@ private struct AppRuleEditSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text(rule == nil ? "Add Rule" : "Edit Rule")
-                .font(.title3.weight(.semibold))
+                .font(.system(size: 22, weight: .semibold)).foregroundStyle(DS.Colors.ink)
 
-            // App
             VStack(alignment: .leading, spacing: 6) {
-                Text("App").font(.callout.weight(.medium))
+                Text("App").font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink2)
                 HStack(spacing: 8) {
-                    if !appName.isEmpty {
-                        AppIconImage(appName: appName).frame(width: 24, height: 24)
-                    }
+                    if !appName.isEmpty { AppIconImage(appName: appName).frame(width: 24, height: 24) }
                     TextField("App name", text: $appName)
-                        .textFieldStyle(.plain).font(.callout)
-                        .padding(8)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(.quaternary.opacity(0.5)))
-                    Button {
-                        showAppPicker = true
-                    } label: {
-                        Image(systemName: "list.bullet")
-                    }
-                    .buttonStyle(.bordered)
-                    .popover(isPresented: $showAppPicker, arrowEdge: .bottom) {
-                        RunningAppPickerPopover { picked in
-                            appName = picked
-                            showAppPicker = false
+                        .textFieldStyle(.plain).font(DS.Fonts.sans(14)).padding(8)
+                        .background(RoundedRectangle(cornerRadius: DS.Radius.sm).fill(DS.Colors.bg))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line2, lineWidth: 1))
+                    Button { showAppPicker = true } label: { Image(systemName: "list.bullet") }
+                        .buttonStyle(.dsSecondary)
+                        .popover(isPresented: $showAppPicker, arrowEdge: .bottom) {
+                            RunningAppPickerPopover { picked in appName = picked; showAppPicker = false }
                         }
-                    }
                 }
             }
 
-            // URL pattern (browsers only)
             if isBrowser {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("URL Pattern").font(.callout.weight(.medium))
+                    Text("URL Pattern").font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink2)
                     TextField("e.g. github.com, mail.google.com", text: $urlPattern)
-                        .textFieldStyle(.plain).font(.callout)
-                        .padding(8)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(.quaternary.opacity(0.5)))
-                    Text("Leave empty to match any site.")
-                        .font(.caption).foregroundStyle(.tertiary)
+                        .textFieldStyle(.plain).font(DS.Fonts.sans(14)).padding(8)
+                        .background(RoundedRectangle(cornerRadius: DS.Radius.sm).fill(DS.Colors.bg))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line2, lineWidth: 1))
+                    Text("Leave empty to match any site.").font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
                 }
             }
 
-            // Tone
             VStack(alignment: .leading, spacing: 6) {
-                Text("Tone").font(.callout.weight(.medium))
-                Picker("", selection: Binding(
-                    get: { selectedToneId },
-                    set: { selectedToneId = $0 }
-                )) {
-                    ForEach(tones) { tone in
-                        Text(tone.name).tag(Optional<UUID>.some(tone.id))
+                Text("Tone").font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink2)
+                Menu {
+                    ForEach(tones) { tone in Button(tone.name) { selectedToneId = tone.id } }
+                } label: {
+                    HStack(spacing: 5) {
+                        Text(tones.first(where: { $0.id == selectedToneId })?.name ?? "Select tone")
+                            .font(DS.Fonts.sans(13)).foregroundStyle(DS.Colors.ink)
+                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 9)).foregroundStyle(DS.Colors.ink3)
                     }
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(DS.Colors.bg)
+                    .clipShape(RoundedRectangle(cornerRadius: 7))
+                    .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(DS.Colors.line2, lineWidth: 1))
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
+                .menuStyle(.borderlessButton).fixedSize()
             }
 
-            HStack {
+            HStack(spacing: 8) {
                 Spacer()
-                Button("Cancel") { dismiss() }.keyboardShortcut(.escape)
+                Button("Cancel") { dismiss() }.buttonStyle(.dsSecondary).keyboardShortcut(.escape)
                 Button(rule == nil ? "Add" : "Save") {
                     guard let toneId = selectedToneId else { return }
                     onSave(AppRule(
@@ -238,17 +342,14 @@ private struct AppRuleEditSheet: View {
                     ))
                     dismiss()
                 }
-                .keyboardShortcut(.return)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.dsPrimary).keyboardShortcut(.return)
                 .disabled(appName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedToneId == nil)
             }
         }
-        .padding(24)
-        .frame(width: 400)
+        .padding(24).frame(width: 400)
+        .background(DS.Colors.bg).preferredColorScheme(.light)
     }
 }
-
-// MARK: - Running app picker popover
 
 private struct RunningAppPickerPopover: View {
     let onSelect: (String) -> Void
@@ -268,13 +369,12 @@ private struct RunningAppPickerPopover: View {
                             if let icon = app.icon {
                                 Image(nsImage: icon).resizable().scaledToFit().frame(width: 20, height: 20)
                             }
-                            Text(app.localizedName ?? "").font(.callout)
+                            Text(app.localizedName ?? "").font(DS.Fonts.sans(13)).foregroundStyle(DS.Colors.ink)
                             Spacer()
                         }
                         .padding(.horizontal, 12).padding(.vertical, 6)
                     }
-                    .buttonStyle(.plain)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain).contentShape(Rectangle())
                     .background(AppPickerRowHover())
                 }
             }
@@ -288,7 +388,7 @@ private struct AppPickerRowHover: View {
     @State private var hovered = false
     var body: some View {
         RoundedRectangle(cornerRadius: 4)
-            .fill(hovered ? Color.accentColor.opacity(0.12) : Color.clear)
+            .fill(hovered ? DS.Colors.bg : Color.clear)
             .onHover { hovered = $0 }
     }
 }
