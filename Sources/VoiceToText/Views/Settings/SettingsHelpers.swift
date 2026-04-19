@@ -1,48 +1,69 @@
 import SwiftUI
 
 func settingsCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-    ThemedSettingsCard(content: content)
+    VStack(alignment: .leading, spacing: 12) { content() }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DS.Colors.card)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.lg)
+                .strokeBorder(DS.Colors.line, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.03), radius: 1, x: 0, y: 1)
+        .padding(.bottom, 10)
 }
 
-private struct ThemedSettingsCard<Content: View>: View {
-    @Environment(\.themeColors) private var theme
-    let content: Content
+func panelHero(icon: String, title: String, subtitle: String? = nil) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+        Text(title.uppercased())
+            .font(DS.Fonts.mono(10.5, weight: .medium))
+            .foregroundStyle(DS.Colors.moss)
+            .tracking(0.6)
 
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
+        Text(title)
+            .font(.system(size: 28, weight: .semibold))
+            .foregroundStyle(DS.Colors.ink)
+            .tracking(-0.5)
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) { content }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(theme.cardBorder))
+        if let subtitle {
+            Text(subtitle)
+                .font(DS.Fonts.sans(13.5))
+                .foregroundStyle(DS.Colors.ink2)
+                .lineSpacing(3)
+        }
     }
+    .padding(.bottom, 10)
 }
 
+// Simple row header used inside cards
 func settingsRow(_ title: String, icon: String, trailing: String? = nil) -> some View {
-    HStack(spacing: 8) {
+    HStack(spacing: 10) {
         Image(systemName: icon)
             .font(.system(size: 13))
-            .foregroundStyle(.secondary)
-            .frame(width: 20)
-        Text(title).font(.body)
+            .foregroundStyle(DS.Colors.ink3)
+            .frame(width: 18)
+        Text(title)
+            .font(DS.Fonts.sans(13))
+            .foregroundStyle(DS.Colors.ink)
         Spacer()
         if let trailing {
             Text(trailing)
-                .font(.body.monospacedDigit())
-                .foregroundStyle(.tertiary)
+                .font(DS.Fonts.sans(12).monospacedDigit())
+                .foregroundStyle(DS.Colors.ink3)
         }
     }
 }
 
 func sectionHeader(_ title: String, subtitle: String? = nil) -> some View {
     VStack(alignment: .leading, spacing: 4) {
-        Text(title).font(.title2).fontWeight(.semibold)
+        Text(title)
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(DS.Colors.ink)
         if let subtitle {
-            Text(subtitle).font(.callout).foregroundStyle(.secondary)
+            Text(subtitle)
+                .font(DS.Fonts.sans(13))
+                .foregroundStyle(DS.Colors.ink2)
         }
     }
     .padding(.bottom, 4)
