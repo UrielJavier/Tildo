@@ -8,6 +8,7 @@ final class AppState {
         case recording = "Recording..."
         case transcribing = "Transcribing..."
         case processing = "Enhancing..."
+        case done = "Done"
         case error = "Error"
     }
 
@@ -20,15 +21,17 @@ final class AppState {
     var translateToEnglish = false  // legacy, kept for history entries
     var llmTranslateLanguage: Language?
     var mode: TranscriptionMode = .batch
-    var model: WhisperModel = .base
+    var model: WhisperModel = .largeV3TurboQ5
     var outputMode: OutputMode = .typeText
     var hotkeyKeyCode: UInt16 = 1
     var hotkeyModifiers: UInt = NSEvent.ModifierFlags([.command, .shift]).rawValue
+    var cancelKeyCode: UInt16 = UInt16.max   // UInt16.max = not assigned
+    var cancelModifiers: UInt = 0
     var startSound: SoundEffect = .pop
     var stopSound: SoundEffect = .funk
     var notifyOnComplete = false
     var showFloatingWindow = true
-    var appTheme: AppTheme = .system
+    var appTheme: AppTheme = .light
 
     // Prompt fields — composed into initial_prompt for whisper
     var promptContext: String = ""
@@ -45,6 +48,7 @@ final class AppState {
 
     // Text replacement rules applied after transcription
     var replacementRules: [ReplacementRule] = ReplacementRule.defaultRules
+    var customReplacementCategories: [String] = []
 
     // Tone library + per-app rules
     var tones: [AppTone] = []
@@ -53,6 +57,12 @@ final class AppState {
 
     // Legacy — kept for data migration from older versions. Not shown in UI.
     var appToneRules: [AppToneRule] = []
+
+    // Transient UI — not persisted
+    var ruleAddOpen: Bool = false
+    var ruleEditing: AppRule? = nil
+    var toneAddOpen: Bool = false
+    var toneEditing: AppTone? = nil
 
     /// Resolves the style prompt for a given app + URL.
     /// Precedence: per-app URL rule > per-app rule > default tone > llmStylePrompt (legacy fallback).
@@ -120,6 +130,8 @@ final class AppState {
     var history: [TranscriptionEntry] = []
     var stats = TranscriptionStats()
     var selectedSettingsSection: SettingsSection = .general
+    var selectedMainSection: MainSection = .inicio
+    var showSettings: Bool = false
 
     var hotkeyLabel: String {
         VoiceToText.hotkeyLabel(keyCode: hotkeyKeyCode, modifiers: NSEvent.ModifierFlags(rawValue: hotkeyModifiers))
@@ -147,14 +159,17 @@ final class AppState {
         translateToEnglish = false
         llmTranslateLanguage = nil
         mode = .batch
+        model = .largeV3TurboQ5
         outputMode = .typeText
         hotkeyKeyCode = 1
         hotkeyModifiers = NSEvent.ModifierFlags([.command, .function]).rawValue
+        cancelKeyCode = UInt16.max
+        cancelModifiers = 0
         startSound = .pop
         stopSound = .funk
         notifyOnComplete = false
         showFloatingWindow = true
-        appTheme = .system
+        appTheme = .light
         promptContext = ""
         promptVocabulary = ""
         promptStyle = "Natural, conversacional"
@@ -185,6 +200,7 @@ final class AppState {
         case .recording: return "mic.fill"
         case .transcribing: return "text.bubble"
         case .processing: return "sparkles"
+        case .done: return "checkmark.circle"
         case .error: return "exclamationmark.triangle"
         }
     }

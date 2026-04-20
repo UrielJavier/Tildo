@@ -24,7 +24,7 @@ struct FloatingRecordingView: View {
     var body: some View {
         Group {
             switch appState.status {
-            case .idle, .error:
+            case .idle:
                 idlePill
             case .recording:
                 recordingPill
@@ -40,6 +40,10 @@ struct FloatingRecordingView: View {
                     label: "Polishing with \(activeToneName)…",
                     chipText: activeToneName
                 )
+            case .done:
+                donePill
+            case .error:
+                errorPill
             }
         }
         .animation(DS.Motion.snappy, value: appState.status)
@@ -78,7 +82,7 @@ struct FloatingRecordingView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .frame(width: 280, height: 48)
+        .frame(width: 220, height: 44)
         .pillChrome(bg: pillBg)
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
@@ -102,7 +106,44 @@ struct FloatingRecordingView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .frame(width: 280, height: 48)
+        .frame(width: 220, height: 44)
+        .pillChrome(bg: pillBg)
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+    }
+
+    // MARK: - Done (checkmark + fade)
+
+    private var donePill: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DS.Colors.moss)
+            Text("Listo")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(DS.Colors.paper.opacity(0.85))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
+        .frame(height: 44)
+        .pillChrome(bg: pillBg)
+        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+    }
+
+    // MARK: - Error
+
+    private var errorPill: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 13))
+                .foregroundStyle(DS.Colors.rec)
+            Text(appState.lastError.flatMap { $0.count < 40 ? $0 : nil } ?? "Error")
+                .font(.system(size: 12))
+                .foregroundStyle(DS.Colors.paper.opacity(0.75))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(height: 44)
         .pillChrome(bg: pillBg)
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
     }
@@ -119,10 +160,7 @@ private extension View {
                 RoundedRectangle(cornerRadius: DS.Radius.xl)
                     .strokeBorder(DS.Colors.paper.opacity(0.06), lineWidth: 1)
             )
-            .shadow(color: DS.Shadow.pill.color,
-                    radius: DS.Shadow.pill.radius,
-                    x: DS.Shadow.pill.x,
-                    y: DS.Shadow.pill.y)
+            .shadow(color: .black.opacity(0.28), radius: 8, x: 0, y: 4)
     }
 }
 
@@ -151,30 +189,44 @@ private struct RecordingDot: View {
     }
 }
 
-// MARK: - Waveform bars (§4.1 — 14 bars, 1.8 pt wide, 2 pt gap, 3–14 pt tall)
+// MARK: - Waveform bars (§4.1 — 14 bars, standard SwiftUI animation)
 
 private struct WaveformBars: View {
     let level: Float
     private let count = 14
-    private let barWidth: CGFloat = 1.8
-    private let gap: CGFloat = 2.0
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let amp = CGFloat(max(0.15, level))
-            HStack(spacing: gap) {
-                ForEach(0..<count, id: \.self) { i in
-                    let phase = Double(i) / Double(count) * .pi * 2
-                    let osc = CGFloat((sin(t * 8 + phase) + 1) / 2)
-                    let h = 3 + (14 - 3) * osc * amp
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(DS.Colors.paper.opacity(0.95))
-                        .frame(width: barWidth, height: max(3, h))
-                }
+        HStack(spacing: 2.0) {
+            ForEach(0..<count, id: \.self) { i in
+                SingleBar(index: i, level: level)
             }
         }
         .frame(height: 14)
+    }
+}
+
+private struct SingleBar: View {
+    let index: Int
+    let level: Float
+    @State private var high = false
+
+    private var targetH: CGFloat {
+        high ? max(5, 14 * CGFloat(max(0.15, level))) : 3
+    }
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1)
+            .fill(DS.Colors.paper.opacity(0.95))
+            .frame(width: 1.8, height: targetH)
+            .onAppear {
+                let delay = Double(index) * 0.04
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    withAnimation(.easeInOut(duration: 0.3 + Double(index % 4) * 0.08)
+                        .repeatForever(autoreverses: true)) {
+                        high = true
+                    }
+                }
+            }
     }
 }
 
@@ -182,24 +234,18 @@ private struct WaveformBars: View {
 
 private struct PillSpinner: View {
     let color: Color
+    @State private var rotating = false
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let angle = (t / 0.9).truncatingRemainder(dividingBy: 1.0) * 360.0
-            Canvas { ctx, size in
-                var path = Path()
-                path.addArc(
-                    center: CGPoint(x: size.width / 2, y: size.height / 2),
-                    radius: size.width / 2 - 0.8,
-                    startAngle: .degrees(angle),
-                    endAngle: .degrees(angle + 270),
-                    clockwise: false
-                )
-                ctx.stroke(path, with: .color(color),
-                           style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+        Circle()
+            .trim(from: 0, to: 0.75)
+            .stroke(color, style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
+            .frame(width: 14, height: 14)
+            .rotationEffect(.degrees(rotating ? 360 : 0))
+            .onAppear {
+                withAnimation(.linear(duration: 0.9).repeatForever(autoreverses: false)) {
+                    rotating = true
+                }
             }
-        }
-        .frame(width: 14, height: 14)
     }
 }

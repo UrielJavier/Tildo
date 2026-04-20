@@ -1,5 +1,38 @@
 import AppKit
 
+/// Installs paired local + global NSEvent monitors and removes them on deinit.
+final class MonitorHolder {
+    var localMonitor: Any?
+    var globalMonitor: Any?
+
+    func install(matching: NSEvent.EventTypeMask = .keyDown,
+                 handler: @escaping (NSEvent) -> NSEvent?) {
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: matching, handler: handler)
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: matching) { event in
+            _ = handler(event)
+        }
+    }
+
+    func remove() {
+        if let m = localMonitor { NSEvent.removeMonitor(m); localMonitor = nil }
+        if let m = globalMonitor { NSEvent.removeMonitor(m); globalMonitor = nil }
+    }
+
+    deinit { remove() }
+}
+
+/// Splits a hotkey into individual display tokens (modifier symbols + key name).
+func hotkeyComponents(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> [String] {
+    var parts: [String] = []
+    if modifiers.contains(.function) { parts.append("fn") }
+    if modifiers.contains(.control) { parts.append("⌃") }
+    if modifiers.contains(.option) { parts.append("⌥") }
+    if modifiers.contains(.shift) { parts.append("⇧") }
+    if modifiers.contains(.command) { parts.append("⌘") }
+    parts.append(keyCodeString(keyCode))
+    return parts
+}
+
 func hotkeyLabel(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> String {
     var parts: [String] = []
     if modifiers.contains(.function) { parts.append("fn") }

@@ -37,6 +37,32 @@ enum WhisperModel: String, CaseIterable {
     }
 
     /// File sizes from HuggingFace (ggerganov/whisper.cpp, decimal MB/GB).
+    var shortLabel: String {
+        switch self {
+        case .tiny:           return "Tiny"
+        case .tinyQ5:         return "Tiny Q5"
+        case .tinyQ8:         return "Tiny Q8"
+        case .base:           return "Base"
+        case .baseQ5:         return "Base Q5"
+        case .baseQ8:         return "Base Q8"
+        case .small:          return "Small"
+        case .smallQ5:        return "Small Q5"
+        case .smallQ8:        return "Small Q8"
+        case .medium:         return "Medium"
+        case .mediumQ5:       return "Medium Q5"
+        case .mediumQ8:       return "Medium Q8"
+        case .largeV1:        return "Large v1"
+        case .largeV2:        return "Large v2"
+        case .largeV2Q5:      return "Large v2 Q5"
+        case .largeV2Q8:      return "Large v2 Q8"
+        case .largeV3:        return "Large v3"
+        case .largeV3Q5:      return "Large v3 Q5"
+        case .largeV3Turbo:   return "Turbo"
+        case .largeV3TurboQ5: return "Turbo Q5"
+        case .largeV3TurboQ8: return "Turbo Q8"
+        }
+    }
+
     var label: String {
         switch self {
         case .tiny:           return "Tiny (~78 MB)"

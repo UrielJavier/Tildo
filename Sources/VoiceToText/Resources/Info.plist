@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.urieljavier.EchoWrite</string>
+    <string>com.urieljavier.Tildo</string>
     <key>CFBundleName</key>
     <string>Tildo</string>
     <key>CFBundleDisplayName</key>
     <string>Tildo</string>
     <key>CFBundleExecutable</key>
-    <string>EchoWrite</string>
+    <string>Tildo</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
@@ -19,7 +19,9 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>LSUIElement</key>
-    <true/>
+    <false/>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>Tildo needs Accessibility access to detect the focused text field and type transcribed text.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Tildo needs microphone access to record your voice for transcription.</string>
     <key>NSServices</key>

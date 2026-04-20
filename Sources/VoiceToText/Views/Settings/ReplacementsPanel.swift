@@ -5,156 +5,216 @@ struct ReplacementsPanel: View {
     let onSave: () -> Void
 
     @State private var searchText = ""
-    @State private var filterCategory: ReplacementCategory? = nil
-    @State private var selectedId: UUID? = nil
+    @State private var filterCategory: String? = nil
+    @State private var editingRule: ReplacementRule? = nil
+    @State private var isCreating = false
+    @State private var showNewCategory = false
+    @State private var newCategoryName = ""
+
+    private var allCategoryNames: [String] {
+        let builtIn = ReplacementCategory.allCases.map { $0.rawValue }
+        return (builtIn + state.customReplacementCategories).filter { name in
+            state.replacementRules.contains { $0.categoryName == name }
+        }
+    }
+
+    private func categoryInfo(_ name: String) -> CategoryInfo {
+        let customIdx = state.customReplacementCategories.firstIndex(of: name) ?? 0
+        return CategoryInfo.from(name, customIndex: customIdx)
+    }
 
     private var filtered: [ReplacementRule] {
         state.replacementRules.filter { rule in
             let matchesSearch = searchText.isEmpty
                 || rule.find.localizedCaseInsensitiveContains(searchText)
                 || rule.replace.localizedCaseInsensitiveContains(searchText)
-            let matchesCat = filterCategory == nil || rule.category == filterCategory
+            let matchesCat = filterCategory == nil || rule.categoryName == filterCategory
             return matchesSearch && matchesCat
         }
     }
 
-    private var grouped: [(cat: ReplacementCategory, items: [ReplacementRule])] {
-        ReplacementCategory.allCases.compactMap { cat in
-            let items = filtered.filter { $0.category == cat }
-            return items.isEmpty ? nil : (cat, items)
+    private var grouped: [(cat: String, info: CategoryInfo, items: [ReplacementRule])] {
+        allCategoryNames.compactMap { name in
+            let items = filtered.filter { $0.categoryName == name }
+            return items.isEmpty ? nil : (name, categoryInfo(name), items)
         }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            panelHero(icon: "arrow.2.squarepath", title: "Replacements",
-                      subtitle: "Text substitutions applied after each transcription.")
-                .padding(.horizontal, 32)
-                .padding(.top, 28)
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    statStrip
-                    searchAndAdd
-                    categoryChips
-                    HStack(alignment: .top, spacing: 12) {
-                        dictList
-                        inspector
+        ZStack(alignment: .trailing) {
+            VStack(alignment: .leading, spacing: 0) {
+                // ── Top bar ────────────────────────────────
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(state.replacementRules.count) ENTRADAS · \(allCategoryNames.count) CATEGORÍAS")
+                            .font(DS.Fonts.mono(10, weight: .medium))
+                            .foregroundStyle(DS.Colors.ink4).tracking(0.4)
+                        Text("Diccionario")
+                            .font(DS.Fonts.display(28))
+                            .foregroundStyle(DS.Colors.ink).tracking(-0.4)
                     }
-                    footerRow
-                    Spacer().frame(height: 16)
+                    Spacer()
+                    Button { isCreating = true } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
+                            Text("Nueva entrada").font(DS.Fonts.sans(13, weight: .semibold))
+                        }
+                        .foregroundStyle(DS.Colors.paper)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(DS.Colors.ink)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 20)
-            }
-        }
-        .onChange(of: state.replacementRules) { onSave() }
-    }
+                .padding(.horizontal, 28).padding(.top, 24).padding(.bottom, 16)
 
-    // MARK: - Stat strip
+                Rectangle().fill(DS.Colors.line).frame(height: 1)
 
-    private var statStrip: some View {
-        HStack(spacing: 0) {
-            statCell("\(state.replacementRules.count)", label: "Entries")
-            Divider().frame(height: 28)
-            statCell("\(state.replacementRules.filter { $0.enabled }.count)", label: "Active")
-            Divider().frame(height: 28)
-            statCell("\(Set(state.replacementRules.map { $0.category.rawValue }).count)", label: "Categories")
-        }
-        .background(DS.Colors.card)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
-        .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Colors.line, lineWidth: 1))
-    }
-
-    private func statCell(_ value: String, label: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value).font(.system(size: 18, weight: .semibold)).foregroundStyle(DS.Colors.ink)
-            Text(label).font(DS.Fonts.sans(11)).foregroundStyle(DS.Colors.ink3)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-    }
-
-    // MARK: - Search + add
-
-    private var searchAndAdd: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").font(.system(size: 12)).foregroundStyle(DS.Colors.ink3)
-                TextField("Search entries…", text: $searchText)
-                    .textFieldStyle(.plain).font(DS.Fonts.sans(13))
-            }
-            .padding(.horizontal, 10).padding(.vertical, 7)
-            .background(DS.Colors.panel)
-            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
-            .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
-
-            Button {
-                let newRule = ReplacementRule(find: "", replace: "", category: filterCategory ?? .general)
-                state.replacementRules.append(newRule)
-                selectedId = newRule.id
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                    Text("New entry").font(DS.Fonts.sans(12.5, weight: .medium))
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        searchBar
+                        categoryChips
+                        dictList
+                        footerRow
+                        Spacer().frame(height: 16)
+                    }
+                    .padding(.horizontal, 28).padding(.top, 16)
                 }
             }
-            .buttonStyle(.dsPrimary)
+            .background(DS.Colors.paper)
+            .onChange(of: state.replacementRules) { onSave() }
+
+            // ── Side panel ────────────────────────────────
+            if isCreating || editingRule != nil {
+                Color.black.opacity(0.12)
+                    .ignoresSafeArea()
+                    .onTapGesture { isCreating = false; editingRule = nil }
+
+                ReplacementSidePanel(
+                    rule: editingRule,
+                    defaultCategory: filterCategory ?? "General",
+                    allCategories: (ReplacementCategory.allCases.map { $0.rawValue } + state.customReplacementCategories),
+                    customCategories: state.customReplacementCategories,
+                    onClose: { isCreating = false; editingRule = nil },
+                    onAddCategory: { name in
+                        if !state.customReplacementCategories.contains(name) {
+                            state.customReplacementCategories.append(name)
+                            onSave()
+                        }
+                    },
+                    onSave: { saved in
+                        if let editing = editingRule,
+                           let idx = state.replacementRules.firstIndex(where: { $0.id == editing.id }) {
+                            state.replacementRules[idx] = saved
+                        } else {
+                            state.replacementRules.append(saved)
+                        }
+                        onSave()
+                        isCreating = false
+                        editingRule = nil
+                    },
+                    onDelete: {
+                        if let editing = editingRule {
+                            state.replacementRules.removeAll { $0.id == editing.id }
+                            onSave()
+                        }
+                        isCreating = false
+                        editingRule = nil
+                    }
+                )
+                .id(editingRule?.id ?? UUID())
+                .frame(width: 460)
+                .frame(maxHeight: .infinity)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.spring(duration: 0.28), value: isCreating || editingRule != nil)
     }
 
-    // MARK: - Category filter chips
+    // MARK: - Search
+
+    private var searchBar: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass").font(.system(size: 12)).foregroundStyle(DS.Colors.ink3)
+            TextField("Buscar entradas…", text: $searchText)
+                .textFieldStyle(.plain).font(DS.Fonts.sans(13))
+        }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(DS.Colors.panel)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
+    }
+
+    // MARK: - Category chips
 
     private var categoryChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                catChip(label: "All", color: DS.Colors.ink,
-                        count: state.replacementRules.count,
-                        selected: filterCategory == nil) { filterCategory = nil }
-                ForEach(ReplacementCategory.allCases) { cat in
-                    let count = state.replacementRules.filter { $0.category == cat }.count
-                    if count > 0 {
-                        catChip(label: cat.rawValue, color: cat.color, count: count,
-                                selected: filterCategory == cat) {
-                            filterCategory = filterCategory == cat ? nil : cat
-                        }
-                    }
+                catChip(label: "Todas", color: DS.Colors.ink,
+                        count: state.replacementRules.count, selected: filterCategory == nil,
+                        onSelect: { filterCategory = nil }, onDelete: nil)
+                ForEach(allCategoryNames, id: \.self) { name in
+                    let count = state.replacementRules.filter { $0.categoryName == name }.count
+                    let info = categoryInfo(name)
+                    catChip(label: name, color: info.color, count: count,
+                            selected: filterCategory == name,
+                            onSelect: { filterCategory = filterCategory == name ? nil : name },
+                            onDelete: name == "General" ? nil : {
+                                state.customReplacementCategories.removeAll { $0 == name }
+                                for i in state.replacementRules.indices where state.replacementRules[i].categoryName == name {
+                                    state.replacementRules[i].categoryName = "General"
+                                }
+                                if filterCategory == name { filterCategory = nil }
+                                onSave()
+                            })
                 }
             }
         }
     }
 
-    private func catChip(label: String, color: Color, count: Int, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                if label != "All" { Circle().fill(color).frame(width: 6, height: 6) }
-                Text(label).font(DS.Fonts.sans(11.5, weight: .medium))
-                Text("\(count)").font(DS.Fonts.sans(10.5))
-                    .foregroundStyle(selected ? Color.white.opacity(0.6) : DS.Colors.ink3)
+    private func catChip(label: String, color: Color, count: Int, selected: Bool,
+                         onSelect: @escaping () -> Void, onDelete: (() -> Void)?) -> some View {
+        HStack(spacing: 0) {
+            Button(action: onSelect) {
+                HStack(spacing: 4) {
+                    if label != "Todas" { Circle().fill(selected ? Color.white : color).frame(width: 6, height: 6) }
+                    Text(label).font(DS.Fonts.sans(11.5, weight: .medium))
+                    Text("\(count)").font(DS.Fonts.sans(10.5))
+                        .foregroundStyle(selected ? Color.white.opacity(0.6) : DS.Colors.ink3)
+                }
+                .padding(.leading, 10).padding(.trailing, onDelete != nil ? 4 : 10).padding(.vertical, 5)
             }
-            .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(RoundedRectangle(cornerRadius: 999).fill(selected ? DS.Colors.ink : DS.Colors.card))
-            .overlay(RoundedRectangle(cornerRadius: 999).strokeBorder(selected ? DS.Colors.ink : DS.Colors.line, lineWidth: 1))
+            .buttonStyle(.plain)
+            .foregroundStyle(selected ? Color.white : DS.Colors.ink2)
+
+            if let onDelete {
+                Button(action: onDelete) {
+                    Image(systemName: "xmark").font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(selected ? Color.white.opacity(0.7) : DS.Colors.ink3)
+                        .padding(.trailing, 8).padding(.vertical, 5)
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(selected ? Color.white : DS.Colors.ink2)
+        .background(RoundedRectangle(cornerRadius: 999).fill(selected ? DS.Colors.ink : DS.Colors.card))
+        .overlay(RoundedRectangle(cornerRadius: 999).strokeBorder(selected ? DS.Colors.ink : DS.Colors.line, lineWidth: 1))
     }
 
-    // MARK: - Dictionary list
+    // MARK: - Dict list
 
     private var dictList: some View {
         VStack(spacing: 0) {
             if grouped.isEmpty {
-                Text(searchText.isEmpty ? "No entries yet." : "No entries match your search.")
+                Text(searchText.isEmpty ? "Sin entradas todavía." : "Ninguna entrada coincide.")
                     .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
                     .frame(maxWidth: .infinity).padding(24)
             }
-            ForEach(Array(grouped.enumerated()), id: \.element.cat.rawValue) { gi, group in
+            ForEach(Array(grouped.enumerated()), id: \.element.cat) { gi, group in
                 if gi > 0 { DSDivider() }
-                // Category header
                 HStack(spacing: 8) {
-                    Circle().fill(group.cat.color).frame(width: 6, height: 6)
-                    Text(group.cat.rawValue.uppercased())
+                    Circle().fill(group.info.color).frame(width: 6, height: 6)
+                    Text(group.cat.uppercased())
                         .font(.system(size: 10.5, weight: .semibold))
                         .foregroundStyle(DS.Colors.ink2).tracking(0.8)
                     Spacer()
@@ -163,13 +223,11 @@ struct ReplacementsPanel: View {
                 .padding(.horizontal, 12).padding(.vertical, 8)
                 .background(DS.Colors.panel)
                 DSDivider()
-                // Rows
                 ForEach(Array(group.items.enumerated()), id: \.element.id) { i, rule in
                     if let idx = state.replacementRules.firstIndex(where: { $0.id == rule.id }) {
                         DictRow(
                             rule: $state.replacementRules[idx],
-                            isSelected: rule.id == selectedId,
-                            onTap: { selectedId = rule.id }
+                            onTap: { editingRule = rule }
                         )
                         if i < group.items.count - 1 { DSDivider() }
                     }
@@ -179,46 +237,15 @@ struct ReplacementsPanel: View {
         .background(DS.Colors.card)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
         .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Colors.line, lineWidth: 1))
-        .frame(maxWidth: .infinity)
     }
-
-    // MARK: - Inspector
-
-    @ViewBuilder
-    private var inspector: some View {
-        if let id = selectedId,
-           let idx = state.replacementRules.firstIndex(where: { $0.id == id }) {
-            EntryInspector(
-                rule: $state.replacementRules[idx],
-                onDelete: {
-                    state.replacementRules.removeAll { $0.id == id }
-                    selectedId = nil
-                }
-            )
-            .frame(maxWidth: .infinity)
-        } else {
-            VStack {
-                Spacer()
-                Text("Select an entry to edit")
-                    .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, minHeight: 200)
-            .background(DS.Colors.card)
-            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
-            .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Colors.line, lineWidth: 1))
-        }
-    }
-
-    // MARK: - Footer
 
     private var footerRow: some View {
         HStack {
             Text("~/.voicetotext/replacements.json")
                 .font(DS.Fonts.mono(10.5)).foregroundStyle(DS.Colors.ink4)
             Spacer()
-            Button("Import…") { }.buttonStyle(.dsSecondary)
-            Button("Export") { }.buttonStyle(.dsSecondary)
+            Button("Importar…") { }.buttonStyle(.dsSecondary)
+            Button("Exportar") { }.buttonStyle(.dsSecondary)
         }
     }
 }
@@ -227,15 +254,13 @@ struct ReplacementsPanel: View {
 
 private struct DictRow: View {
     @Binding var rule: ReplacementRule
-    let isSelected: Bool
     let onTap: () -> Void
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 8) {
                 Text(rule.find.isEmpty ? "—" : rule.find)
-                    .font(DS.Fonts.sans(13))
-                    .italic()
+                    .font(DS.Fonts.sans(13)).italic()
                     .foregroundStyle(DS.Colors.ink).lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text("→").font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
@@ -246,7 +271,6 @@ private struct DictRow: View {
                 DSToggleTrack(isOn: $rule.enabled).scaleEffect(0.75).frame(width: 28, height: 16)
             }
             .padding(.horizontal, 12).padding(.vertical, 9)
-            .background(isSelected ? DS.Colors.mossSoft : Color.clear)
             .contentShape(Rectangle())
             .opacity(rule.enabled ? 1 : 0.55)
         }
@@ -254,88 +278,235 @@ private struct DictRow: View {
     }
 }
 
-// MARK: - Entry inspector
+// MARK: - Side Panel
 
-private struct EntryInspector: View {
-    @Binding var rule: ReplacementRule
+private struct ReplacementSidePanel: View {
+    let rule: ReplacementRule?
+    let defaultCategory: String
+    let allCategories: [String]
+    let customCategories: [String]
+    let onClose: () -> Void
+    let onAddCategory: (String) -> Void
+    let onSave: (ReplacementRule) -> Void
     let onDelete: () -> Void
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                Circle().fill(rule.category.color).frame(width: 8, height: 8)
-                Text("Entry").font(DS.Fonts.sans(12.5, weight: .medium)).foregroundStyle(DS.Colors.ink)
-                Spacer()
-                Button(action: onDelete) {
-                    Image(systemName: "trash").font(.system(size: 11)).foregroundStyle(DS.Colors.rec)
-                }
-                .buttonStyle(.dsGhost)
-            }
-            .padding(.horizontal, 14).padding(.vertical, 12)
-            DSDivider()
+    @State private var find: String
+    @State private var replace: String
+    @State private var categoryName: String
+    @State private var caseSensitive: Bool
+    @State private var wholeWord: Bool
+    @State private var showNewCatField = false
+    @State private var newCatInput = ""
 
-            VStack(alignment: .leading, spacing: 0) {
-                fieldLabel("FIND")
-                TextField("text to find", text: $rule.find)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12.5, design: .monospaced))
-                    .padding(.horizontal, 10).padding(.vertical, 8)
-                    .background(DS.Colors.panel)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(DS.Colors.line, lineWidth: 1))
-
-                Image(systemName: "arrow.down").font(.system(size: 13))
-                    .foregroundStyle(DS.Colors.moss)
-                    .frame(maxWidth: .infinity).padding(.vertical, 8)
-
-                fieldLabel("REPLACE WITH")
-                TextField("replacement", text: $rule.replace)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12.5, weight: .medium, design: .monospaced))
-                    .padding(.horizontal, 10).padding(.vertical, 8)
-                    .background(DS.Colors.panel)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(DS.Colors.line, lineWidth: 1))
-
-                fieldLabel("CATEGORY").padding(.top, 14)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 68))], alignment: .leading, spacing: 5) {
-                    ForEach(ReplacementCategory.allCases) { cat in
-                        let isSel = rule.category == cat
-                        Button { rule.category = cat } label: {
-                            HStack(spacing: 4) {
-                                Circle().fill(cat.color).frame(width: 5, height: 5)
-                                Text(cat.rawValue).font(DS.Fonts.sans(11, weight: .medium))
-                            }
-                            .padding(.horizontal, 9).padding(.vertical, 4)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(isSel ? cat.softColor : Color.clear))
-                            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSel ? cat.color : DS.Colors.line, lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(isSel ? cat.color : DS.Colors.ink2)
-                    }
-                }
-                .padding(.top, 5)
-
-                fieldLabel("OPTIONS").padding(.top, 14)
-                VStack(alignment: .leading, spacing: 6) {
-                    CheckRow(label: "Case sensitive", isOn: $rule.caseSensitive)
-                    CheckRow(label: "Whole word only", isOn: $rule.wholeWord)
-                }
-                .padding(.top, 6)
-            }
-            .padding(14)
-        }
-        .background(DS.Colors.card)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
-        .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Colors.line, lineWidth: 1))
+    init(rule: ReplacementRule?, defaultCategory: String, allCategories: [String],
+         customCategories: [String], onClose: @escaping () -> Void,
+         onAddCategory: @escaping (String) -> Void,
+         onSave: @escaping (ReplacementRule) -> Void, onDelete: @escaping () -> Void) {
+        self.rule = rule
+        self.defaultCategory = defaultCategory
+        self.allCategories = allCategories
+        self.customCategories = customCategories
+        self.onClose = onClose
+        self.onAddCategory = onAddCategory
+        self.onSave = onSave
+        self.onDelete = onDelete
+        _find = State(initialValue: rule?.find ?? "")
+        _replace = State(initialValue: rule?.replace ?? "")
+        _categoryName = State(initialValue: rule?.categoryName ?? defaultCategory)
+        _caseSensitive = State(initialValue: rule?.caseSensitive ?? false)
+        _wholeWord = State(initialValue: rule?.wholeWord ?? false)
     }
 
-    private func fieldLabel(_ text: String) -> some View {
-        Text(text)
-            .font(DS.Fonts.mono(10.5, weight: .medium))
-            .foregroundStyle(DS.Colors.ink4)
-            .tracking(0.6)
-            .padding(.bottom, 5)
+    private var isValid: Bool { !find.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    private func infoFor(_ name: String) -> CategoryInfo {
+        let idx = customCategories.firstIndex(of: name) ?? 0
+        return CategoryInfo.from(name, customIndex: idx)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(rule == nil ? "Nueva entrada" : "Editar entrada")
+                        .font(DS.Fonts.sans(18, weight: .semibold)).foregroundStyle(DS.Colors.ink)
+                    Text("Sustitución aplicada tras cada transcripción.")
+                        .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
+                }
+                Spacer()
+                HStack(spacing: 8) {
+                    if rule != nil {
+                        Button(action: onDelete) {
+                            Image(systemName: "trash").font(.system(size: 11)).foregroundStyle(DS.Colors.rec)
+                                .frame(width: 22, height: 22).background(DS.Colors.panel).clipShape(Circle())
+                        }.buttonStyle(.plain)
+                    }
+                    Button(action: onClose) {
+                        Image(systemName: "xmark").font(.system(size: 10, weight: .semibold)).foregroundStyle(DS.Colors.ink3)
+                            .frame(width: 22, height: 22).background(DS.Colors.panel).clipShape(Circle())
+                    }.buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 28).padding(.top, 24).padding(.bottom, 20)
+
+            Rectangle().fill(DS.Colors.line).frame(height: 1)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+
+                    // FIND
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("OÍDO").font(DS.Fonts.mono(10, weight: .medium)).foregroundStyle(DS.Colors.ink4).tracking(0.4)
+                        TextField("texto a detectar", text: $find)
+                            .textFieldStyle(.plain).font(.system(size: 13, design: .monospaced))
+                            .padding(10).background(DS.Colors.paper)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                            .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
+                    }
+
+                    Image(systemName: "arrow.down").font(.system(size: 13)).foregroundStyle(DS.Colors.moss)
+                        .frame(maxWidth: .infinity)
+
+                    // REPLACE
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("ESCRITO").font(DS.Fonts.mono(10, weight: .medium)).foregroundStyle(DS.Colors.ink4).tracking(0.4)
+                        TextField("reemplazo", text: $replace)
+                            .textFieldStyle(.plain).font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .padding(10).background(DS.Colors.paper)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                            .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
+                    }
+
+                    // CATEGORY
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("CATEGORÍA").font(DS.Fonts.mono(10, weight: .medium)).foregroundStyle(DS.Colors.ink4).tracking(0.4)
+                        FlowLayout(spacing: 6) {
+                            ForEach(allCategories, id: \.self) { name in
+                                let info = infoFor(name)
+                                let isSel = categoryName == name
+                                Button { categoryName = name } label: {
+                                    HStack(spacing: 4) {
+                                        Circle().fill(info.color).frame(width: 5, height: 5)
+                                        Text(name).font(DS.Fonts.sans(11.5, weight: .medium))
+                                    }
+                                    .padding(.horizontal, 10).padding(.vertical, 5)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(isSel ? info.softColor : Color.clear))
+                                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(isSel ? info.color : DS.Colors.line, lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
+                                .foregroundStyle(isSel ? info.color : DS.Colors.ink2)
+                            }
+
+                            // + Nueva categoría
+                            if showNewCatField {
+                                HStack(spacing: 4) {
+                                    TextField("nombre", text: $newCatInput)
+                                        .textFieldStyle(.plain).font(DS.Fonts.sans(11.5))
+                                        .frame(width: 90)
+                                    Button {
+                                        let trimmed = newCatInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                                        if !trimmed.isEmpty {
+                                            onAddCategory(trimmed)
+                                            categoryName = trimmed
+                                        }
+                                        showNewCatField = false
+                                        newCatInput = ""
+                                    } label: {
+                                        Image(systemName: "checkmark").font(.system(size: 9, weight: .bold))
+                                    }
+                                    .buttonStyle(.plain).foregroundStyle(DS.Colors.moss)
+                                    Button {
+                                        showNewCatField = false; newCatInput = ""
+                                    } label: {
+                                        Image(systemName: "xmark").font(.system(size: 9))
+                                    }
+                                    .buttonStyle(.plain).foregroundStyle(DS.Colors.ink3)
+                                }
+                                .padding(.horizontal, 8).padding(.vertical, 5)
+                                .background(RoundedRectangle(cornerRadius: 6).fill(DS.Colors.panel))
+                                .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(DS.Colors.line, lineWidth: 1))
+                            } else {
+                                Button { showNewCatField = true } label: {
+                                    HStack(spacing: 3) {
+                                        Image(systemName: "plus").font(.system(size: 9, weight: .semibold))
+                                        Text("Nueva").font(DS.Fonts.sans(11.5))
+                                    }
+                                    .padding(.horizontal, 10).padding(.vertical, 5)
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.clear))
+                                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(DS.Colors.line, style: StrokeStyle(lineWidth: 1, dash: [4])))
+                                }
+                                .buttonStyle(.plain).foregroundStyle(DS.Colors.ink3)
+                            }
+                        }
+                    }
+
+                    // OPTIONS
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("OPCIONES").font(DS.Fonts.mono(10, weight: .medium)).foregroundStyle(DS.Colors.ink4).tracking(0.4)
+                        CheckRow(label: "Sensible a mayúsculas", isOn: $caseSensitive)
+                        CheckRow(label: "Solo palabra completa", isOn: $wholeWord)
+                    }
+
+                    // Save
+                    Button {
+                        onSave(ReplacementRule(
+                            id: rule?.id ?? UUID(),
+                            find: find.trimmingCharacters(in: .whitespacesAndNewlines),
+                            replace: replace.trimmingCharacters(in: .whitespacesAndNewlines),
+                            enabled: rule?.enabled ?? true,
+                            categoryName: categoryName,
+                            caseSensitive: caseSensitive,
+                            wholeWord: wholeWord
+                        ))
+                    } label: {
+                        Text("Guardar entrada")
+                            .font(DS.Fonts.sans(13, weight: .semibold))
+                            .foregroundStyle(DS.Colors.paper)
+                            .frame(maxWidth: .infinity).padding(.vertical, 10)
+                            .background(isValid ? DS.Colors.ink : DS.Colors.ink4)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+                    }
+                    .buttonStyle(.plain).disabled(!isValid)
+                }
+                .padding(28)
+            }
+        }
+        .background(DS.Colors.paper)
+        .shadow(color: .black.opacity(0.12), radius: 24, x: -4, y: 0)
+    }
+}
+
+// MARK: - Flow layout
+
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 6
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth, x > 0 {
+                y += rowHeight + spacing; x = 0; rowHeight = 0
+            }
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+        }
+        return CGSize(width: maxWidth, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, rowHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x + size.width > bounds.maxX, x > bounds.minX {
+                y += rowHeight + spacing; x = bounds.minX; rowHeight = 0
+            }
+            view.place(at: CGPoint(x: x, y: y), proposal: .unspecified)
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+        }
     }
 }
 

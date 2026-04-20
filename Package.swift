@@ -13,6 +13,7 @@ let package = Package(
             dependencies: ["whisper"],
             path: "Sources/VoiceToText",
             exclude: ["Resources/Info.plist"],
+            resources: [.copy("Resources/github-mark.png")],
             linkerSettings: [
                 .unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist", "-Xlinker", "Sources/VoiceToText/Resources/Info.plist"])
             ]

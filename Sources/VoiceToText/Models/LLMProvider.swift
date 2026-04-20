@@ -31,9 +31,23 @@ enum LLMProvider: String, CaseIterable, Codable {
         case .openAI:
             return ["gpt-4o-mini", "gpt-4o", "gpt-4.1-nano", "gpt-4.1-mini", "gpt-4.1"]
         case .anthropic:
-            return ["claude-haiku-4-5-20251001", "claude-sonnet-4-5-20250514"]
+            return [
+                "claude-haiku-4-5-20251001",
+                "claude-sonnet-4-5-20250514",
+                "claude-sonnet-4-6",
+                "claude-opus-4-7",
+            ]
         case .groq:
             return ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "gemma2-9b-it"]
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .claudeCode: return "Claude Code CLI"
+        case .openAI:     return "OpenAI"
+        case .anthropic:  return "Anthropic"
+        case .groq:       return "Groq"
         }
     }
 

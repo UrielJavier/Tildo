@@ -1,6 +1,6 @@
 import Foundation
 
-struct AppRule: Identifiable, Codable {
+struct AppRule: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var appName: String
     var urlPattern: String

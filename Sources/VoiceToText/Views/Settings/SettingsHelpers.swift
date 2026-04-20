@@ -68,3 +68,31 @@ func sectionHeader(_ title: String, subtitle: String? = nil) -> some View {
     }
     .padding(.bottom, 4)
 }
+
+/// Generic sliding side panel container.
+/// Wraps the panel in a ZStack; when `isOpen`, shows a dim backdrop + slides in `sidebar` from the trailing edge.
+struct PanelWithSidebar<PanelContent: View, SideContent: View>: View {
+    let isOpen: Bool
+    let onDismiss: () -> Void
+    @ViewBuilder var panel: () -> PanelContent
+    @ViewBuilder var sidebar: () -> SideContent
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            panel()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if isOpen {
+                Color.black.opacity(0.12)
+                    .ignoresSafeArea()
+                    .onTapGesture { onDismiss() }
+
+                sidebar()
+                    .frame(maxHeight: .infinity)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .animation(.spring(duration: 0.28), value: isOpen)
+    }
+}

@@ -12,30 +12,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var hotkeyManager: HotkeyManager?
     var liveTask: Task<Void, Never>?
     private var downloadManager: ModelDownloadManager?
-    private var settingsWindow: NSWindow?
-    private var floatingWindows: [NSPanel] = []
+    private var mainWindow: NSWindow?
+    private var floatingWindows: [NSWindow] = []
     private var liveSessionText = ""
     private var recordingTimer: Task<Void, Never>?
-    private var windowDelegate: SettingsWindowDelegate?
 
     private var eventMonitor: Any?
     private var recordingTarget: RecordingTarget?
     private var recordingTargetURL: String?
     private var onboardingWindow: NSWindow?
+    private var previousFrontmostApp: NSRunningApplication?
+    private var workspaceObserver: Any?
+    private var finishTransitionWork: DispatchWorkItem?
+    private var cancelKeyLocalMonitor: Any?
+    private var cancelKeyGlobalMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         downloadManager = ModelDownloadManager(appState: appState) { [weak self] model in
             await self?.loadModel(model)
         }
         appState.restore()
+        ensureValidModelSelected()
         setupHotkey()
-        setupStatusItemRightClick()
         registerService()
         showOnboardingIfNeeded()
+        if appState.hasCompletedOnboarding {
+            openMainWindow()
+        }
         if !TextSimulator.hasAccessibilityPermission {
             TextSimulator.requestAccessibilityPermission()
         }
         Task { await loadModel() }
+        setupFrontmostAppTracking()
+    }
+
+    private func setupFrontmostAppTracking() {
+        let ownPid = ProcessInfo.processInfo.processIdentifier
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.processIdentifier != ownPid else { return }
+            self?.previousFrontmostApp = app
+        }
     }
 
     private func showOnboardingIfNeeded() {
@@ -185,53 +206,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Status Item Right-Click Menu
 
-    private func setupStatusItemRightClick() {
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .rightMouseDown) { [weak self] event in
-            guard let self else { return event }
-            // Detect right-click on the MenuBarExtra's status bar window
-            if let window = event.window,
-               String(describing: type(of: window)).contains("StatusBar") {
-                self.showStatusItemMenu(from: event)
-                return nil
-            }
-            return event
-        }
-    }
-
-    private func showStatusItemMenu(from event: NSEvent) {
-        let menu = NSMenu()
-
-        let recordItem = NSMenuItem(
-            title: appState.isRecording ? "Stop Recording" : "Start Recording",
-            action: #selector(toggleRecordingFromMenu),
-            keyEquivalent: ""
-        )
-        recordItem.target = self
-        recordItem.isEnabled = appState.isModelLoaded && !appState.isTranscribing && !appState.isProcessing
-        menu.addItem(recordItem)
-
-        menu.addItem(.separator())
-
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettingsFromMenu), keyEquivalent: ",")
-        settingsItem.target = self
-        menu.addItem(settingsItem)
-
-        let historyItem = NSMenuItem(title: "History", action: #selector(openHistoryFromMenu), keyEquivalent: "")
-        historyItem.target = self
-        menu.addItem(historyItem)
-
-        menu.addItem(.separator())
-
-        let quitItem = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        menu.addItem(quitItem)
-
-        // Show the menu at the status item location
-        if let window = event.window {
-            let locationInWindow = event.locationInWindow
-            menu.popUp(positioning: nil, at: NSPoint(x: locationInWindow.x, y: 0), in: window.contentView)
-        }
-    }
-
     @objc private func toggleRecordingFromMenu() {
         Task { await toggleRecording() }
     }
@@ -244,6 +218,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openHistory()
     }
 
+    @objc private func openMainWindowFromMenu() {
+        openMainWindow()
+    }
+
     // MARK: - macOS Service
 
     private func registerService() {
@@ -251,7 +229,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSUpdateDynamicServices()
     }
 
-    /// Called by macOS when the user picks "EchoWrite — Transcribe" from a right-click menu.
+    /// Called by macOS when the user picks "Tildo — Transcribe" from a right-click menu.
     @objc func transcribeService(
         _ pboard: NSPasteboard,
         userData: String,
@@ -270,11 +248,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager?.keyCode = appState.hotkeyKeyCode
         hotkeyManager?.modifiers = NSEvent.ModifierFlags(rawValue: appState.hotkeyModifiers)
         hotkeyManager?.register()
+        setupCancelKeyMonitor()
     }
 
     func applyHotkey() {
         hotkeyManager?.keyCode = appState.hotkeyKeyCode
         hotkeyManager?.modifiers = NSEvent.ModifierFlags(rawValue: appState.hotkeyModifiers)
+    }
+
+    // MARK: - Cancel recording
+
+    func cancelRecording() async {
+        guard appState.isRecording else { return }
+        finishTransitionWork?.cancel()
+        finishTransitionWork = nil
+        liveTask?.cancel()
+        stopRecordingTimer()
+        _ = recorder.stopRecording()
+        hideFloatingWindow()
+        appState.status = .idle
+        appState.lastError = nil
+    }
+
+    func setupCancelKeyMonitor() {
+        if let m = cancelKeyLocalMonitor { NSEvent.removeMonitor(m); cancelKeyLocalMonitor = nil }
+        if let m = cancelKeyGlobalMonitor { NSEvent.removeMonitor(m); cancelKeyGlobalMonitor = nil }
+
+        guard appState.cancelKeyCode != UInt16.max else { return }
+
+        let keyCode = appState.cancelKeyCode
+        let targetMods = NSEvent.ModifierFlags(rawValue: appState.cancelModifiers)
+        let relevantMask: NSEvent.ModifierFlags = [.command, .shift, .option, .control, .function]
+
+        let handler: (NSEvent) -> Void = { [weak self] event in
+            guard let self else { return }
+            guard event.keyCode == keyCode else { return }
+            guard event.modifierFlags.intersection(relevantMask) == targetMods.intersection(relevantMask) else { return }
+            Task { @MainActor in await self.cancelRecording() }
+        }
+
+        cancelKeyLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            handler(event); return event
+        }
+        cancelKeyGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { handler($0) }
     }
 
     // MARK: - Notifications
@@ -309,56 +325,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showFloatingWindow() {
         guard appState.showFloatingWindow else { return }
         guard floatingWindows.isEmpty else {
-            floatingWindows.forEach { $0.orderFront(nil) }
+            floatingWindows.forEach { $0.orderFrontRegardless() }
             return
         }
 
-        let panelWidth: CGFloat = 200
-        let panelHeight: CGFloat = 50
+        let pillWidth: CGFloat = 280
+        let pillHeight: CGFloat = 48
+        // Extra transparent margin so the SwiftUI shadow isn't clipped by the window frame.
+        let shadowPad: CGFloat = 16
+        let panelWidth = pillWidth + shadowPad * 2
+        let panelHeight = pillHeight + shadowPad * 2
         let gap: CGFloat = 4
 
-        // Try to position left-aligned below the focused text input.
-        // AX uses top-left origin; AppKit uses bottom-left. The main
-        // screen (index 0) has origin at bottom-left and its height
-        // equals the global coordinate space height.
+        // Try to position below the focused text input (AX → AppKit coord conversion).
         let placement: (origin: NSPoint, screen: NSScreen)? = {
             guard let axFrame = TextSimulator.focusedElementFrame(),
                   let mainScreen = NSScreen.screens.first else { return nil }
-
             let globalH = mainScreen.frame.height
-            // Convert AX top-left coords to AppKit bottom-left coords
-            let inputLeftX = axFrame.origin.x
+            let inputLeftX = axFrame.origin.x - shadowPad
             let inputBottomY = globalH - (axFrame.origin.y + axFrame.size.height)
-            let panelY = inputBottomY - panelHeight - gap
-
-            let panelOrigin = NSPoint(x: inputLeftX, y: panelY)
-
-            // Find which screen contains this point
-            guard let screen = NSScreen.screens.first(where: {
-                $0.visibleFrame.contains(panelOrigin)
-            }) else { return nil }
-
+            let panelOrigin = NSPoint(x: inputLeftX, y: inputBottomY - pillHeight - gap - shadowPad)
+            guard let screen = NSScreen.screens.first(where: { $0.visibleFrame.contains(panelOrigin) }) else { return nil }
             return (panelOrigin, screen)
         }()
 
-        // Input detected → single panel on that screen, left-aligned below input.
-        // No input → default: one panel per screen, centered at bottom.
+        // No AX focus → one pill per screen, just below the menu bar.
         let placements: [(NSPoint, NSScreen)]
         if let placement {
             placements = [(placement.origin, placement.screen)]
         } else {
             placements = NSScreen.screens.map { screen in
                 let sf = screen.visibleFrame
-                return (NSPoint(x: sf.midX - panelWidth / 2, y: sf.minY + 60), screen)
+                let origin = NSPoint(x: sf.midX - panelWidth / 2, y: sf.maxY - panelHeight - 8 + shadowPad)
+                return (origin, screen)
             }
         }
 
         for (origin, _) in placements {
-            let view = FloatingRecordingView(appState: appState)
-
-            let hostingView = MovableFloatingHostingView(rootView: view)
+            // Wrap the pill in a padded container so shadows render within the window bounds.
+            let view = FloatingRecordingView(appState: appState).padding(shadowPad)
+            let hostingView = NSHostingView(rootView: AnyView(view))
+            hostingView.frame = NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight)
             hostingView.wantsLayer = true
-            hostingView.layer?.backgroundColor = .clear
+            hostingView.layer?.backgroundColor = NSColor.clear.cgColor
 
             let panel = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: panelWidth, height: panelHeight),
@@ -367,17 +376,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 defer: false
             )
             panel.contentView = hostingView
-            panel.level = .screenSaver
+            panel.level = NSWindow.Level(rawValue: Int(NSWindow.Level.popUpMenu.rawValue) + 2)
             panel.backgroundColor = .clear
             panel.isOpaque = false
             panel.isMovableByWindowBackground = true
-            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
             panel.isReleasedWhenClosed = false
             panel.hasShadow = false
+            panel.alphaValue = 1.0
 
             panel.setFrameOrigin(origin)
-
-            panel.makeKeyAndOrderFront(nil)
             panel.orderFrontRegardless()
             floatingWindows.append(panel)
         }
@@ -385,10 +393,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func hideFloatingWindow() {
         guard !floatingWindows.isEmpty else { return }
-        for panel in floatingWindows {
-            panel.close()
-        }
+        for panel in floatingWindows { panel.close() }
         floatingWindows.removeAll()
+        deactivateAppIfNoWindows()
     }
 
     // MARK: - Settings Window
@@ -399,23 +406,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func deactivateAppIfNoWindows() {
-        let hasVisible = settingsWindow?.isVisible ?? false
-        if !hasVisible {
+        if !(mainWindow?.isVisible ?? false) {
             NSApp.setActivationPolicy(.accessory)
         }
     }
 
     func openSettings(section: SettingsSection = .general) {
         appState.selectedSettingsSection = section
-        if let window = settingsWindow, window.isVisible {
-            window.makeKeyAndOrderFront(nil)
+        openMainWindow()
+        appState.showSettings = true
+    }
+
+    func openMainWindow(section: MainSection? = nil) {
+        if let section { appState.selectedMainSection = section }
+        if let w = mainWindow, w.isVisible {
+            w.makeKeyAndOrderFront(nil)
             activateApp()
             return
         }
-        let view = SettingsView(
+        let view = MainWindowView(
             state: appState,
             onSave: { [weak self] in self?.appState.save() },
             onHotkeyChange: { [weak self] in self?.applyHotkey() },
+            onCancelHotkeyChange: { [weak self] in self?.setupCancelKeyMonitor() },
             onPauseHotkey: { [weak self] in self?.hotkeyManager?.unregister() },
             onResumeHotkey: { [weak self] in self?.hotkeyManager?.register() },
             onStartMonitoring: { [weak self] in self?.startAudioMonitoring() },
@@ -431,32 +444,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onCancelDownload: { [weak self] in self?.cancelDownload() }
         )
-        let screen = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
-        let windowWidth = screen.width * 3 / 5
-        let windowHeight = screen.height * 0.75
-
         let delegate = SettingsWindowDelegate { [weak self] in self?.deactivateAppIfNoWindows() }
-        windowDelegate = delegate
-
         let controller = NSHostingController(rootView: view)
         let window = NSWindow(contentViewController: controller)
-        window.title = "VoiceToText"
-        window.styleMask = [.titled, .closable, .resizable, .miniaturizable]
-        window.minSize = NSSize(width: 500, height: 350)
-        window.level = .normal
+        window.title = "Tildo"
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.minSize = NSSize(width: 860, height: 520)
+        window.setContentSize(NSSize(width: 860, height: 600))
         window.delegate = delegate
-        window.setContentSize(NSSize(width: windowWidth, height: windowHeight))
         window.center()
         window.makeKeyAndOrderFront(nil)
         activateApp()
-        settingsWindow = window
+        mainWindow = window
     }
 
     func openHistory() {
-        openSettings(section: .history)
+        openMainWindow(section: .cuaderno)
     }
 
     // MARK: - Model Loading
+
+    private func ensureValidModelSelected() {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: appState.model.localPath) { return }
+        // Current model file missing — pick the first downloaded model
+        if let available = WhisperModel.allCases.first(where: { fileManager.fileExists(atPath: $0.localPath) }) {
+            appState.model = available
+        }
+    }
 
     func loadModel(_ model: WhisperModel? = nil) async {
         let selected = model ?? appState.model
@@ -498,7 +513,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Recording
 
+    private func scheduleFinish(delay: Double = 1.2) {
+        finishTransitionWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.hideFloatingWindow()
+            self.appState.status = .idle
+        }
+        finishTransitionWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+    }
+
     func toggleRecording() async {
+        finishTransitionWork?.cancel()
+        finishTransitionWork = nil
         guard !appState.isTranscribing, !appState.isProcessing, appState.isModelLoaded else { return }
         if appState.isRecording {
             if appState.mode == .live { await stopLiveRecording() }
@@ -512,11 +540,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             do {
                 recordingTarget = TextSimulator.captureCurrentTarget()
+                    ?? previousFrontmostApp.map { app in
+                        RecordingTarget(
+                            element: AXUIElementCreateApplication(app.processIdentifier),
+                            pid: app.processIdentifier,
+                            appName: app.localizedName ?? ""
+                        )
+                    }
+                fputs("[DEBUG] captureCurrentTarget appName='\(recordingTarget?.appName ?? "nil")' previousFrontmost='\(previousFrontmostApp?.localizedName ?? "nil")'\n", stderr)
+                fputs("[DEBUG] appRules=\(appState.appRules.map { "\($0.appName)(\($0.isEnabled))" })\n", stderr)
+                fputs("[DEBUG] resolveStylePrompt='\(appState.resolveStylePrompt(appName: recordingTarget?.appName ?? "", url: nil))'\n", stderr)
                 recordingTargetURL = nil
                 if let target = recordingTarget {
-                    Task.detached { [appName = target.appName] in
+                    let appName = target.appName
+                    Task { @MainActor in
+                        // NSAppleScript must run on main thread
                         let url = TextSimulator.browserURL(for: appName)
-                        await MainActor.run { self.recordingTargetURL = url }
+                        self.recordingTargetURL = url
                     }
                 }
                 playStartSound()
@@ -556,16 +596,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 translate: false,
                 initialPrompt: appState.composedPrompt)
             text = await postProcessIfEnabled(text, stylePrompt: resolvedStylePrompt())
-            hideFloatingWindow()
             outputText(text)
-            appState.status = .idle
+            appState.status = .done
             appState.lastError = nil
             appState.addToHistory(text, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
             sendNotification(text: text)
+            scheduleFinish()
         } catch {
-            hideFloatingWindow()
             appState.status = .error
             appState.lastError = error.localizedDescription
+            scheduleFinish(delay: 2.0)
         }
     }
 
@@ -681,10 +721,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                 usleep(50_000)
                                 self.outputText(processed)
                             }
-                            self.hideFloatingWindow()
-                            self.appState.status = .idle
+                            self.appState.status = .done
                             self.appState.addToHistory(processed, durationSeconds: self.appState.recordingSeconds, translated: self.appState.llmTranslateLanguage != nil)
                             self.sendNotification(text: processed)
+                            self.scheduleFinish()
                         }
                         return
                     }
@@ -734,10 +774,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 usleep(50_000)
                 outputText(finalText)
             }
-            hideFloatingWindow()
             appState.addToHistory(finalText, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
             sendNotification(text: finalText)
-            appState.status = .idle
+            appState.status = .done
+            scheduleFinish()
             return
         }
         appState.status = .transcribing
@@ -757,16 +797,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 outputText(text)
             }
-            hideFloatingWindow()
             appState.addToHistory(finalText, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
             sendNotification(text: finalText)
-            appState.status = .idle
+            appState.status = .done
             appState.lastError = nil
+            scheduleFinish()
         } catch {
-            hideFloatingWindow()
             appState.addToHistory(liveSessionText, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
             appState.status = .error
             appState.lastError = error.localizedDescription
+            scheduleFinish(delay: 2.0)
         }
     }
 }

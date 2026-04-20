@@ -122,32 +122,40 @@ enum StylePreset: String, CaseIterable, Identifiable {
 
 enum SettingsSection: String, CaseIterable, Identifiable {
     case general = "General"
-    case appearance = "Appearance"
-    case models = "Models"
-    case transcription = "Transcription"
-    case replacements = "Replacements"
-    case llm = "AI Enhance"
-    case tones = "Tones"
-    case appRules = "App Rules"
-    case dashboard = "Metrics"
-    case history = "History"
-    case about = "About"
+    case audio = "Audio"
+    case modelos = "Modelos"
+    case llm = "LLM"
+    case atajos = "Atajos"
+    case privacidad = "Privacidad"
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .general:       return "gearshape"
-        case .appearance:    return "paintbrush"
-        case .models:        return "cube.box"
-        case .transcription: return "waveform"
-        case .replacements:  return "arrow.2.squarepath"
-        case .llm:           return "sparkles"
-        case .tones:         return "music.note.list"
-        case .appRules:      return "app.badge"
-        case .dashboard:     return "chart.bar"
-        case .history:       return "clock.arrow.circlepath"
-        case .about:         return "info.circle"
+        case .general:    return "gearshape"
+        case .audio:      return "waveform"
+        case .modelos:    return "cube.box"
+        case .llm:        return "sparkles"
+        case .atajos:     return "keyboard"
+        case .privacidad: return "lock.shield"
+        }
+    }
+}
+
+enum MainSection: String, Identifiable {
+    case inicio = "Inicio"
+    case diccionario = "Diccionario"
+    case tonos = "Tonos"
+    case cuaderno = "Cuaderno"
+
+    var id: String { rawValue }
+
+    var icon: String {
+        switch self {
+        case .inicio:      return "house"
+        case .diccionario: return "book.closed"
+        case .tonos:       return "wand.and.stars"
+        case .cuaderno:    return "note.text"
         }
     }
 }

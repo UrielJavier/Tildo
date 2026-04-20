@@ -9,6 +9,8 @@ extension AppState {
         static let output = "output"
         static let hotkeyKeyCode = "hotkeyKeyCode"
         static let hotkeyModifiers = "hotkeyModifiers"
+        static let cancelKeyCode = "cancelKeyCode"
+        static let cancelModifiers = "cancelModifiers"
         static let startSound = "startSound"
         static let stopSound = "stopSound"
         static let notifyOnComplete = "notifyOnComplete"
@@ -36,6 +38,7 @@ extension AppState {
         static let showFloatingWindow = "showFloatingWindow"
         static let appTheme = "appTheme"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
+        static let customReplacementCategories = "customReplacementCategories"
     }
 
     private static let defaults = UserDefaults.standard
@@ -48,6 +51,8 @@ extension AppState {
         Self.defaults.set(outputMode.rawValue, forKey: Keys.output)
         Self.defaults.set(Int(hotkeyKeyCode), forKey: Keys.hotkeyKeyCode)
         Self.defaults.set(Int(hotkeyModifiers), forKey: Keys.hotkeyModifiers)
+        Self.defaults.set(Int(cancelKeyCode), forKey: Keys.cancelKeyCode)
+        Self.defaults.set(Int(cancelModifiers), forKey: Keys.cancelModifiers)
         Self.defaults.set(startSound.rawValue, forKey: Keys.startSound)
         Self.defaults.set(stopSound.rawValue, forKey: Keys.stopSound)
         Self.defaults.set(notifyOnComplete, forKey: Keys.notifyOnComplete)
@@ -58,6 +63,9 @@ extension AppState {
         Self.defaults.set(promptInstructions, forKey: Keys.promptInstructions)
         if let data = try? JSONEncoder().encode(replacementRules) {
             Self.defaults.set(data, forKey: Keys.replacementRules)
+        }
+        if let data = try? JSONEncoder().encode(customReplacementCategories) {
+            Self.defaults.set(data, forKey: Keys.customReplacementCategories)
         }
         if let data = try? JSONEncoder().encode(tones) {
             Self.defaults.set(data, forKey: Keys.tones)
@@ -100,6 +108,10 @@ extension AppState {
             hotkeyKeyCode = UInt16(Self.defaults.integer(forKey: Keys.hotkeyKeyCode))
             hotkeyModifiers = UInt(Self.defaults.integer(forKey: Keys.hotkeyModifiers))
         }
+        if Self.defaults.object(forKey: Keys.cancelKeyCode) != nil {
+            cancelKeyCode = UInt16(Self.defaults.integer(forKey: Keys.cancelKeyCode))
+            cancelModifiers = UInt(Self.defaults.integer(forKey: Keys.cancelModifiers))
+        }
         if let rawStartSound = Self.defaults.string(forKey: Keys.startSound),
            let restoredStartSound = SoundEffect(rawValue: rawStartSound) { startSound = restoredStartSound }
         if let rawStopSound = Self.defaults.string(forKey: Keys.stopSound),
@@ -110,6 +122,10 @@ extension AppState {
         if let restoredStyle = Self.defaults.string(forKey: Keys.promptStyle) { promptStyle = restoredStyle }
         if let restoredPunctuation = Self.defaults.string(forKey: Keys.promptPunctuation) { promptPunctuation = restoredPunctuation }
         if let restoredInstructions = Self.defaults.string(forKey: Keys.promptInstructions) { promptInstructions = restoredInstructions }
+        if let data = Self.defaults.data(forKey: Keys.customReplacementCategories),
+            let cats = try? JSONDecoder().decode([String].self, from: data) {
+            customReplacementCategories = cats
+        }
         if let data = Self.defaults.data(forKey: Keys.replacementRules),
            let restoredRules = try? JSONDecoder().decode([ReplacementRule].self, from: data) {
             replacementRules = restoredRules

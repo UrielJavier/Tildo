@@ -118,6 +118,11 @@ enum TextSimulator {
         guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedApplicationAttribute as CFString, &focusedApp) == .success else {
             return nil
         }
+        // Skip if our own process is focused — querying our own AX element from the main thread deadlocks
+        var focusedPid: pid_t = 0
+        AXUIElementGetPid(focusedApp as! AXUIElement, &focusedPid)
+        guard focusedPid != ProcessInfo.processInfo.processIdentifier else { return nil }
+
         var focusedElement: AnyObject?
         guard AXUIElementCopyAttributeValue(focusedApp as! AXUIElement, kAXFocusedUIElementAttribute as CFString, &focusedElement) == .success else {
             return nil

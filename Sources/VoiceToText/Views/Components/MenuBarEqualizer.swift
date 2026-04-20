@@ -1,27 +1,17 @@
 import SwiftUI
 
-// Menu bar icon — three visual states per §4.6:
-//   .idle        → static tilde glyph
-//   .recording   → 3-bar equalizer, staggered sine, 1.0 s cycle
-//   .transcribing / .processing → tilde rotating one full revolution per 2.4 s
-//
-// Never tint with moss or rec — always Color.primary so macOS handles
-// light / dark menu bar appearances automatically.
-
 struct MenuBarEqualizer: View {
     let status: AppState.Status
     let level: Float
 
     var body: some View {
         switch status {
-        case .idle:
+        case .idle, .done, .error:
             TildeGlyph()
         case .recording:
             RecordingBars(level: level)
         case .transcribing, .processing:
             RotatingTilde()
-        case .error:
-            TildeGlyph()
         }
     }
 }
@@ -36,45 +26,58 @@ private struct TildeGlyph: View {
     }
 }
 
-// MARK: - Recording: 3 animated bars
+// MARK: - Recording: 3 bars driven by @State + repeatForever animation
+// No TimelineView — animations run in Core Animation, not in SwiftUI render passes,
+// so they don't trigger NSStatusBarButton setImage on every display frame.
 
 private struct RecordingBars: View {
     let level: Float
 
-    private let barCount = 3
-    private let barWidth: CGFloat = 2
-    private let spacing: CGFloat = 2.5
+    @State private var phase: Double = 0
 
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let levelBoost = CGFloat(max(0.25, sqrt(max(0, level))))
-            HStack(spacing: spacing) {
-                ForEach(0..<barCount, id: \.self) { i in
-                    let phase = Double(i) * (1.0 / 3.0)
-                    let osc = CGFloat((sin((t + phase) * 2 * .pi / 1.0) + 1) / 2)
-                    let h = 3 + (10 - 3) * osc * levelBoost
-                    RoundedRectangle(cornerRadius: 1)
-                        .fill(Color.primary)
-                        .frame(width: barWidth, height: max(3, h))
-                }
+        HStack(spacing: 2.5) {
+            ForEach(0..<3, id: \.self) { i in
+                AnimatedBar(phase: phase + Double(i) * (1.0 / 3.0), level: level)
             }
-            .frame(height: 14)
         }
+        .frame(height: 14)
+        .onAppear {
+            withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) {
+                phase = 1.0
+            }
+        }
+    }
+}
+
+private struct AnimatedBar: View {
+    let phase: Double
+    let level: Float
+
+    var body: some View {
+        let levelBoost = CGFloat(max(0.25, sqrt(max(0, level))))
+        let osc = CGFloat((sin(phase * 2 * .pi) + 1) / 2)
+        let h = max(3, 3 + 7 * osc * levelBoost)
+        return RoundedRectangle(cornerRadius: 1)
+            .fill(Color.primary)
+            .frame(width: 2, height: h)
     }
 }
 
 // MARK: - Transcribing / Enhancing: rotating tilde
 
 private struct RotatingTilde: View {
+    @State private var angle: Double = 0
+
     var body: some View {
-        TimelineView(.animation) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            let angle = (t / 2.4).truncatingRemainder(dividingBy: 1.0) * 360.0
-            Text("∼")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.primary)
-                .rotationEffect(.degrees(angle))
-        }
+        Text("∼")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.primary)
+            .rotationEffect(.degrees(angle))
+            .onAppear {
+                withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: false)) {
+                    angle = 360
+                }
+            }
     }
 }

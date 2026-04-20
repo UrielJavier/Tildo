@@ -4,103 +4,140 @@ struct TonesPanel: View {
     @Bindable var state: AppState
     let onSave: () -> Void
 
-    @State private var selectedIdx: Int? = nil
-    @State private var isCreating = false
-    @State private var editingTone: AppTone?
+    @State private var selectedTab: ToneTab = .biblioteca
 
-    private func isActive(_ tone: AppTone) -> Bool {
-        state.defaultToneId == tone.id || state.appRules.contains { $0.toneId == tone.id }
-    }
+    enum ToneTab { case biblioteca, porAplicacion }
 
-    private func usageLabel(_ tone: AppTone) -> String {
-        if state.defaultToneId == tone.id { return "Default tone" }
-        let names = state.appRules.filter { $0.toneId == tone.id }.map { $0.appName }.prefix(3).joined(separator: ", ")
-        return names.isEmpty ? "Not assigned" : "Used in \(names)"
+    private var appsConfigured: Int { state.appRules.count }
+
+    private func usageCount(_ tone: AppTone) -> Int {
+        state.appRules.filter { $0.toneId == tone.id }.count
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            panelHero(icon: "music.note.list", title: "Tones",
-                      subtitle: "Styles applied by the AI when post-processing your transcriptions.")
-                .padding(.horizontal, 32)
-                .padding(.top, 28)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    // Header: count + New tone
-                    HStack {
-                        let activeCount = state.tones.filter { isActive($0) }.count
-                        Text("\(activeCount) active · \(state.tones.count) total")
-                            .font(DS.Fonts.sans(13)).foregroundStyle(DS.Colors.ink2)
-                        Spacer()
-                        Button { isCreating = true } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                                Text("New tone").font(DS.Fonts.sans(12, weight: .medium))
-                            }
-                        }
-                        .buttonStyle(.dsPrimary)
-                    }
+            // ── Top bar ──────────────────────────────────
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(state.tones.count) TONOS · \(appsConfigured) APPS CONFIGURADAS")
+                        .font(DS.Fonts.mono(10, weight: .medium))
+                        .foregroundStyle(DS.Colors.ink4)
+                        .tracking(0.4)
 
-                    if state.tones.isEmpty {
-                        emptyState
-                    } else {
-                        // Tone list
-                        VStack(spacing: 6) {
-                            ForEach(Array(state.tones.enumerated()), id: \.element.id) { i, tone in
-                                ToneRow(
-                                    tone: tone,
-                                    isSelected: selectedIdx == i,
-                                    isActive: isActive(tone),
-                                    usageLabel: usageLabel(tone),
-                                    onTap: { selectedIdx = selectedIdx == i ? nil : i }
-                                )
-                            }
-                        }
-
-                        // Inspector for selected tone
-                        if let idx = selectedIdx, idx < state.tones.count {
-                            ToneInspector(
-                                tone: state.tones[idx],
-                                onEdit: { editingTone = state.tones[idx] },
-                                onDelete: {
-                                    state.tones.remove(at: idx)
-                                    selectedIdx = nil
-                                    onSave()
-                                }
-                            )
-                        }
-                    }
-
-                    Spacer().frame(height: 16)
+                    Text("Tonos")
+                        .font(DS.Fonts.display(28))
+                        .foregroundStyle(DS.Colors.ink)
+                        .tracking(-0.4)
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 20)
+
+                Spacer()
+
+                Button { state.toneAddOpen = true } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
+                        Text("Nuevo tono").font(DS.Fonts.sans(13, weight: .semibold))
+                    }
+                    .foregroundStyle(DS.Colors.paper)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(DS.Colors.ink)
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+
+            // ── Tabs ─────────────────────────────────────
+            HStack(spacing: 0) {
+                ToneTabButton(
+                    label: "Biblioteca",
+                    count: state.tones.count,
+                    isSelected: selectedTab == .biblioteca
+                ) { selectedTab = .biblioteca }
+
+                ToneTabButton(
+                    label: "Por aplicación",
+                    count: appsConfigured,
+                    isSelected: selectedTab == .porAplicacion
+                ) { selectedTab = .porAplicacion }
+            }
+            .padding(.horizontal, 28)
+
+            Rectangle().fill(DS.Colors.line).frame(height: 1)
+
+            // ── Content ──────────────────────────────────
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if selectedTab == .biblioteca {
+                        bibliotecaContent
+                    } else {
+                        porAplicacionContent
+                    }
+                }
+                .padding(.horizontal, 28)
+                .padding(.top, 20)
+                .padding(.bottom, 32)
             }
         }
-        .sheet(isPresented: $isCreating) {
-            ToneEditSheet(tone: nil) { newTone in
-                state.tones.append(newTone)
-                onSave()
-            }
-        }
-        .sheet(item: $editingTone) { tone in
-            ToneEditSheet(tone: tone) { updated in
-                if let idx = state.tones.firstIndex(where: { $0.id == updated.id }) {
-                    state.tones[idx] = updated
-                    onSave()
+        .background(DS.Colors.paper)
+    }
+
+    // MARK: - Biblioteca tab
+
+    @ViewBuilder
+    private var bibliotecaContent: some View {
+        // Intro
+        Text("Un **tono** es una forma de reescribir tu dictado. Crea los que quieras y asígnalos a cada app en la pestaña **Por aplicación**.")
+            .font(DS.Fonts.sans(13))
+            .foregroundStyle(DS.Colors.ink2)
+            .fixedSize(horizontal: false, vertical: true)
+
+        if state.tones.isEmpty {
+            emptyState
+        } else {
+            VStack(spacing: 10) {
+                ForEach(state.tones) { tone in
+                    ToneCard(
+                        tone: tone,
+                        isDefault: state.defaultToneId == tone.id,
+                        usageCount: usageCount(tone),
+                        onSetDefault: {
+                            state.defaultToneId = state.defaultToneId == tone.id ? nil : tone.id
+                            onSave()
+                        },
+                        onEdit: { state.toneEditing = tone },
+                        onDuplicate: { copy in
+                            state.tones.append(copy)
+                            onSave()
+                        },
+                        onDelete: {
+                            state.tones.removeAll { $0.id == tone.id }
+                            if state.defaultToneId == tone.id { state.defaultToneId = nil }
+                            onSave()
+                        }
+                    )
                 }
             }
         }
     }
 
+    // MARK: - Por aplicación tab
+
+    @ViewBuilder
+    private var porAplicacionContent: some View {
+        AppRulesPanel(state: state, onSave: onSave)
+    }
+
     private var emptyState: some View {
         VStack(spacing: 10) {
-            Image(systemName: "music.note.list")
+            Image(systemName: "wand.and.stars")
                 .font(.system(size: 28)).foregroundStyle(DS.Colors.ink3.opacity(0.4))
-            Text("No tones yet")
+            Text("Sin tonos")
                 .font(DS.Fonts.sans(14, weight: .medium)).foregroundStyle(DS.Colors.ink2)
-            Text("Create tones to control how the AI styles your transcriptions.")
+            Text("Crea tonos para controlar cómo el AI reescribe tus transcripciones.")
                 .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
                 .multilineTextAlignment(.center)
         }
@@ -109,252 +146,393 @@ struct TonesPanel: View {
     }
 }
 
-// MARK: - Tone row
+// MARK: - Tab button
 
-private struct ToneRow: View {
-    let tone: AppTone
-    let isSelected: Bool
-    let isActive: Bool
-    let usageLabel: String
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 10) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8).fill(DS.Colors.mossSoft).frame(width: 32, height: 32)
-                    Image(systemName: "music.note").font(.system(size: 14)).foregroundStyle(DS.Colors.moss)
-                }
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(tone.name)
-                        .font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink)
-                    Text(usageLabel)
-                        .font(DS.Fonts.sans(11)).foregroundStyle(DS.Colors.ink3)
-                        .lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                if isActive {
-                    Text("ACTIVE")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.white).tracking(0.2)
-                        .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(DS.Colors.moss))
-                }
-            }
-            .padding(.horizontal, 12).padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? DS.Colors.card : Color.clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(isSelected ? DS.Colors.line : Color.clear, lineWidth: 1)
-            )
-            .shadow(color: isSelected ? .black.opacity(0.04) : .clear, radius: 2, y: 1)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Tone inspector
-
-private struct ToneInspector: View {
-    let tone: AppTone
-    let onEdit: () -> Void
-    let onDelete: () -> Void
-
-    private static let sampleRaw = "hey so um i think we should like push the launch to next week"
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Inspector header
-            HStack(spacing: 10) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8).fill(DS.Colors.mossSoft).frame(width: 30, height: 30)
-                    Image(systemName: "music.note").font(.system(size: 13)).foregroundStyle(DS.Colors.moss)
-                }
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(tone.name).font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink)
-                    Text("Prompt & preview").font(DS.Fonts.sans(11)).foregroundStyle(DS.Colors.ink3)
-                }
-                Spacer()
-                Button("Edit", action: onEdit).buttonStyle(.dsSecondary)
-                Button(action: onDelete) {
-                    Image(systemName: "trash").font(.system(size: 11)).foregroundStyle(DS.Colors.rec)
-                }
-                .buttonStyle(.dsGhost)
-            }
-            .padding(.horizontal, 14).padding(.vertical, 12)
-            DSDivider()
-
-            VStack(alignment: .leading, spacing: 0) {
-                // PROMPT
-                Text("PROMPT")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(DS.Colors.ink3).tracking(0.6)
-                    .padding(.bottom, 6)
-                Text(tone.stylePrompt.isEmpty ? "No custom instructions" : tone.stylePrompt)
-                    .font(.system(size: 12.5, design: .monospaced))
-                    .foregroundStyle(DS.Colors.ink).lineSpacing(3)
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(DS.Colors.panel)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(DS.Colors.line, lineWidth: 1))
-
-                // PREVIEW
-                Text("PREVIEW")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(DS.Colors.ink3).tracking(0.6)
-                    .padding(.top, 16).padding(.bottom, 8)
-
-                HStack(alignment: .top, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("RAW")
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(DS.Colors.ink3).tracking(0.6)
-                        Text("\"\(Self.sampleRaw)\"")
-                            .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink2)
-                            .italic().lineSpacing(2)
-                    }
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(DS.Colors.panel)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(DS.Colors.line, lineWidth: 1))
-
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 12)).foregroundStyle(DS.Colors.moss)
-                        .padding(.top, 18)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("AFTER")
-                            .font(.system(size: 9.5, weight: .semibold))
-                            .foregroundStyle(DS.Colors.moss).tracking(0.6)
-                        Text(tone.stylePrompt.isEmpty ? "No transformation" : "Result will appear here after a real recording.")
-                            .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink2).lineSpacing(2)
-                    }
-                    .padding(10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(DS.Colors.mossSoft)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(DS.Colors.moss.opacity(0.25), lineWidth: 1))
-                }
-            }
-            .padding(14)
-        }
-        .background(DS.Colors.card)
-        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
-        .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Colors.line, lineWidth: 1))
-        .transition(.opacity.combined(with: .move(edge: .top)))
-        .animation(.easeInOut(duration: 0.2), value: tone.id)
-    }
-}
-
-// MARK: - Edit Sheet
-
-private struct ToneEditSheet: View {
-    let tone: AppTone?
-    let onSave: (AppTone) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var name: String
-    @State private var selectedPreset: StylePreset
-    @State private var stylePrompt: String
-
-    init(tone: AppTone?, onSave: @escaping (AppTone) -> Void) {
-        self.tone = tone
-        self.onSave = onSave
-        _name = State(initialValue: tone?.name ?? "")
-        let prompt = tone?.stylePrompt ?? ""
-        let matched = StylePreset.allCases.first { $0 != .none && $0.prompt == prompt }
-        _selectedPreset = State(initialValue: matched ?? .none)
-        _stylePrompt = State(initialValue: prompt)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text(tone == nil ? "New Tone" : "Edit Tone")
-                .font(.system(size: 22, weight: .semibold)).foregroundStyle(DS.Colors.ink)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Name").font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink2)
-                TextField("e.g. Casual, Work Formal, WhatsApp", text: $name)
-                    .textFieldStyle(.plain).font(DS.Fonts.sans(14))
-                    .padding(8)
-                    .background(RoundedRectangle(cornerRadius: DS.Radius.sm).fill(DS.Colors.panel))
-                    .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Preset").font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink2)
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                    ForEach(StylePreset.allCases) { preset in
-                        TonePresetButton(preset: preset, isSelected: selectedPreset == preset) {
-                            selectedPreset = preset
-                            if preset != .none { stylePrompt = preset.prompt }
-                        }
-                    }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Instructions").font(DS.Fonts.sans(13, weight: .medium)).foregroundStyle(DS.Colors.ink2)
-                TextField("e.g. Casual tone, no capital letters, skip periods.", text: $stylePrompt, axis: .vertical)
-                    .textFieldStyle(.plain).font(DS.Fonts.sans(14))
-                    .lineLimit(3...6).padding(8)
-                    .background(RoundedRectangle(cornerRadius: DS.Radius.sm).fill(DS.Colors.panel))
-                    .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
-                    .onChange(of: stylePrompt) {
-                        if stylePrompt != selectedPreset.prompt { selectedPreset = .none }
-                    }
-                Text("These instructions are sent to the AI. Leave empty to just fix punctuation.")
-                    .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
-            }
-
-            HStack(spacing: 8) {
-                Spacer()
-                Button("Cancel") { dismiss() }.buttonStyle(.dsSecondary).keyboardShortcut(.escape)
-                Button("Save") {
-                    onSave(AppTone(
-                        id: tone?.id ?? UUID(),
-                        name: name.trimmingCharacters(in: .whitespacesAndNewlines),
-                        stylePrompt: stylePrompt.trimmingCharacters(in: .whitespacesAndNewlines)
-                    ))
-                    dismiss()
-                }
-                .buttonStyle(.dsPrimary)
-                .keyboardShortcut(.return)
-                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(24)
-        .frame(width: 440)
-        .background(DS.Colors.panel)
-        .preferredColorScheme(.light)
-    }
-}
-
-private struct TonePresetButton: View {
-    let preset: StylePreset
+private struct ToneTabButton: View {
+    let label: String
+    let count: Int
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: preset.icon).font(.system(size: 11))
-                Text(preset.rawValue).font(DS.Fonts.sans(12, weight: .medium))
+            HStack(spacing: 6) {
+                Text(label)
+                    .font(DS.Fonts.sans(13, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? DS.Colors.ink : DS.Colors.ink3)
+
+                Text("\(count)")
+                    .font(DS.Fonts.mono(10))
+                    .foregroundStyle(isSelected ? DS.Colors.ink3 : DS.Colors.ink4)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(DS.Colors.panel)
+                    .clipShape(Capsule())
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 6).padding(.horizontal, 8)
-            .background(RoundedRectangle(cornerRadius: DS.Radius.sm)
-                .fill(isSelected ? DS.Colors.mossSoft : DS.Colors.panel))
-            .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm)
-                .strokeBorder(isSelected ? DS.Colors.moss : DS.Colors.line, lineWidth: 1.5))
+            .padding(.bottom, 10)
+            .padding(.trailing, 20)
+            .overlay(alignment: .bottom) {
+                if isSelected {
+                    Rectangle()
+                        .fill(DS.Colors.ink)
+                        .frame(height: 2)
+                }
+            }
         }
         .buttonStyle(.plain)
-        .foregroundStyle(isSelected ? DS.Colors.moss : DS.Colors.ink2)
+    }
+}
+
+// MARK: - Tone Card
+
+private struct ToneCard: View {
+    let tone: AppTone
+    let isDefault: Bool
+    let usageCount: Int
+    let onSetDefault: () -> Void
+    let onEdit: () -> Void
+    let onDuplicate: (AppTone) -> Void
+    let onDelete: () -> Void
+
+    @State private var showActions = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            // Left accent bar
+            RoundedRectangle(cornerRadius: 2)
+                .fill(DS.Colors.moss)
+                .frame(width: 3)
+                .padding(.vertical, 1)
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(alignment: .center, spacing: 8) {
+                    Text(tone.name)
+                        .font(DS.Fonts.sans(15, weight: .semibold))
+                        .foregroundStyle(DS.Colors.ink)
+
+                    Spacer()
+
+                    Button { showActions = true } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(DS.Colors.ink3)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showActions, arrowEdge: .trailing) {
+                        ToneActionsPopover(
+                            isDefault: isDefault,
+                            usageCount: usageCount,
+                            onSetDefault: { showActions = false; onSetDefault() },
+                            onEdit: { showActions = false; onEdit() },
+                            onDuplicate: {
+                                showActions = false
+                                let copy = AppTone(id: UUID(), name: tone.name + " (copia)", description: tone.description, category: tone.category, stylePrompt: tone.stylePrompt, preview: tone.preview)
+                                onDuplicate(copy)
+                            },
+                            onDelete: { showActions = false; onDelete() }
+                        )
+                    }
+                }
+
+                if !tone.stylePrompt.isEmpty {
+                    Text(tone.stylePrompt)
+                        .font(DS.Fonts.sans(11))
+                        .foregroundStyle(DS.Colors.ink3)
+                        .lineLimit(2)
+                        .truncationMode(.tail)
+                }
+
+                if isDefault || usageCount > 0 {
+                    HStack(spacing: 5) {
+                        if isDefault { TagChip(label: "por defecto", style: .dark) }
+                        if usageCount > 0 { TagChip(label: "\(usageCount) app\(usageCount == 1 ? "" : "s")", style: .green) }
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .padding(.leading, 14)
+            .padding(.vertical, 14)
+            .padding(.trailing, 14)
+        }
+        .background(DS.Colors.card)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.lg)
+                .strokeBorder(isDefault ? DS.Colors.ink : DS.Colors.line, lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Actions Popover
+
+private struct ToneActionsPopover: View {
+    let isDefault: Bool
+    let usageCount: Int
+    let onSetDefault: () -> Void
+    let onEdit: () -> Void
+    let onDuplicate: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            PopoverAction(label: isDefault ? "Quitar como defecto" : "Poner como defecto", action: onSetDefault)
+            Divider()
+            PopoverAction(label: "Editar", action: onEdit)
+            Divider()
+            PopoverAction(label: "Duplicar", action: onDuplicate)
+            Divider()
+            PopoverAction(label: "Borrar", color: DS.Colors.rec, disabled: isDefault || usageCount > 0, disabledHint: "Quita el tono de todas las apps primero", action: onDelete)
+        }
+        .frame(width: 180)
+        .background(DS.Colors.paper)
+    }
+}
+
+struct PopoverAction: View {
+    let label: String
+    var color: Color = DS.Colors.ink
+    var disabled: Bool = false
+    var disabledHint: String = ""
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: { if !disabled { action() } }) {
+            Text(label)
+                .font(DS.Fonts.sans(13))
+                .foregroundStyle(disabled ? DS.Colors.ink4 : color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(isHovered && !disabled ? DS.Colors.panel : Color.clear)
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help(disabled ? disabledHint : "")
+    }
+}
+
+// MARK: - Tag Chip
+
+private struct TagChip: View {
+    let label: String
+    enum Style { case green, dark }
+    let style: Style
+
+    var body: some View {
+        Text(label)
+            .font(DS.Fonts.mono(9))
+            .foregroundStyle(style == .dark ? DS.Colors.paper : DS.Colors.mossInk)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(style == .dark ? DS.Colors.ink : DS.Colors.mossSoft)
+            .clipShape(Capsule())
+    }
+}
+
+// MARK: - Side Panel
+
+struct ToneSidePanel: View {
+    let tone: AppTone?
+    let allTones: [AppTone]
+    let onClose: () -> Void
+    let onSave: (AppTone) -> Void
+
+    @State private var name: String
+    @State private var etiqueta: String
+    @State private var description: String
+    @State private var stylePrompt: String
+    @State private var preview: String
+    @State private var basedOnId: UUID?
+
+    private static let sampleRaw = "pues mira, hemos sacado como una nueva versión del editor que es bastante más rápida y tiene modo oscuro"
+
+    init(tone: AppTone?, allTones: [AppTone], onClose: @escaping () -> Void, onSave: @escaping (AppTone) -> Void) {
+        self.tone = tone
+        self.allTones = allTones
+        self.onClose = onClose
+        self.onSave = onSave
+        _name = State(initialValue: tone?.name ?? "")
+        _etiqueta = State(initialValue: tone?.category ?? "")
+        _description = State(initialValue: tone?.description ?? "")
+        _stylePrompt = State(initialValue: tone?.stylePrompt ?? "")
+        _preview = State(initialValue: tone?.preview ?? "")
+        _basedOnId = State(initialValue: nil)
+    }
+
+    private var isValid: Bool { !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // ── Header ────────────────────────────────────
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(tone == nil ? "Nuevo tono" : "Editar tono")
+                        .font(DS.Fonts.sans(18, weight: .semibold))
+                        .foregroundStyle(DS.Colors.ink)
+                    Text("Define cómo reescribir tu dictado.")
+                        .font(DS.Fonts.sans(12))
+                        .foregroundStyle(DS.Colors.ink3)
+                }
+                Spacer()
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(DS.Colors.ink3)
+                        .frame(width: 22, height: 22)
+                        .background(DS.Colors.panel)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
+
+            Rectangle().fill(DS.Colors.line).frame(height: 1)
+
+            // ── Form ──────────────────────────────────────
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+
+                    // Nombre
+                    SidePanelField(label: "Nombre", hint: "Aparece en la lista y en los menús por app.") {
+                        TextField("ej. Marketing, Casual, Trabajo", text: $name)
+                            .textFieldStyle(.plain)
+                            .font(DS.Fonts.sans(14))
+                            .padding(10)
+                            .background(DS.Colors.paper)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                            .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
+                    }
+
+                    // Partir de...
+                    if !allTones.isEmpty {
+                        HStack(spacing: 10) {
+                            Text("Partir de…")
+                                .font(DS.Fonts.sans(13, weight: .medium))
+                                .foregroundStyle(DS.Colors.ink2)
+                            Picker("", selection: $basedOnId) {
+                                Text("En blanco").tag(UUID?.none)
+                                ForEach(allTones) { t in
+                                    Text(t.name).tag(Optional(t.id))
+                                }
+                            }
+                            .labelsHidden()
+                            .onChange(of: basedOnId) {
+                                if let id = basedOnId, let base = allTones.first(where: { $0.id == id }) {
+                                    if stylePrompt.isEmpty { stylePrompt = base.stylePrompt }
+                                }
+                            }
+                        }
+                    }
+
+                    // Instrucciones al modelo
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Instrucciones al modelo")
+                                .font(DS.Fonts.sans(13, weight: .medium))
+                                .foregroundStyle(DS.Colors.ink2)
+                            Spacer()
+                            Text("prompt")
+                                .font(DS.Fonts.mono(10))
+                                .foregroundStyle(DS.Colors.ink4)
+                        }
+                        TextField("ej. Reescribe en tono de copy de marketing: propuestas breves, verbo al principio…", text: $stylePrompt, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 12.5, design: .monospaced))
+                            .lineLimit(5...10)
+                            .padding(10)
+                            .background(DS.Colors.paper)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                            .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
+                    }
+
+                    // Vista previa
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("VISTA PREVIA")
+                            .font(DS.Fonts.mono(10, weight: .medium))
+                            .foregroundStyle(DS.Colors.ink4)
+                            .tracking(0.4)
+
+                        VStack(alignment: .leading, spacing: 0) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("RAW")
+                                    .font(DS.Fonts.mono(9, weight: .medium))
+                                    .foregroundStyle(DS.Colors.ink4)
+                                    .tracking(0.3)
+                                Text(Self.sampleRaw)
+                                    .font(DS.Fonts.sans(13))
+                                    .foregroundStyle(DS.Colors.ink2)
+                            }
+                            .padding(14)
+
+                            Rectangle().fill(DS.Colors.line).frame(height: 1)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(etiqueta.isEmpty ? (name.isEmpty ? "TONO" : name.uppercased()) : etiqueta.uppercased())
+                                    .font(DS.Fonts.mono(9, weight: .medium))
+                                    .foregroundStyle(DS.Colors.moss)
+                                    .tracking(0.3)
+                                Text(preview.isEmpty ? "El resultado aparecerá aquí después de una grabación real." : preview)
+                                    .font(DS.Fonts.sans(13))
+                                    .foregroundStyle(preview.isEmpty ? DS.Colors.ink4 : DS.Colors.ink2)
+                                    .italic(preview.isEmpty)
+                            }
+                            .padding(14)
+                        }
+                        .background(DS.Colors.panel)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+                        .overlay(RoundedRectangle(cornerRadius: DS.Radius.md).strokeBorder(DS.Colors.line, lineWidth: 1))
+                    }
+
+                    // Guardar
+                    Button {
+                        onSave(AppTone(
+                            id: tone?.id ?? UUID(),
+                            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                            description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+                            category: "",
+                            stylePrompt: stylePrompt.trimmingCharacters(in: .whitespacesAndNewlines),
+                            preview: preview.trimmingCharacters(in: .whitespacesAndNewlines)
+                        ))
+                    } label: {
+                        Text("Guardar tono")
+                            .font(DS.Fonts.sans(13, weight: .semibold))
+                            .foregroundStyle(DS.Colors.paper)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(isValid ? DS.Colors.ink : DS.Colors.ink4)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!isValid)
+                }
+                .padding(28)
+            }
+        }
+        .background(DS.Colors.paper)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+        .shadow(color: .black.opacity(0.12), radius: 24, x: -4, y: 0)
+    }
+}
+
+private struct SidePanelField<Content: View>: View {
+    let label: String
+    let hint: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(DS.Fonts.sans(13, weight: .medium))
+                .foregroundStyle(DS.Colors.ink2)
+            content()
+            Text(hint)
+                .font(DS.Fonts.sans(11))
+                .foregroundStyle(DS.Colors.ink4)
+        }
     }
 }

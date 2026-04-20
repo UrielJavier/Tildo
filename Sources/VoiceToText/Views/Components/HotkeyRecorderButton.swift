@@ -1,22 +1,5 @@
 import SwiftUI
 
-private final class MonitorHolder {
-    var localMonitor: Any?
-    var globalMonitor: Any?
-    func install(matching: NSEvent.EventTypeMask = .keyDown,
-                 handler: @escaping (NSEvent) -> NSEvent?) {
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: matching, handler: handler)
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: matching) { event in
-            _ = handler(event)
-        }
-    }
-    func remove() {
-        if let m = localMonitor { NSEvent.removeMonitor(m); localMonitor = nil }
-        if let m = globalMonitor { NSEvent.removeMonitor(m); globalMonitor = nil }
-    }
-    deinit { remove() }
-}
-
 struct HotkeyRecorderButton: View {
     @Binding var keyCode: UInt16
     @Binding var modifiers: UInt
