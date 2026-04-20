@@ -1,0 +1,195 @@
+/* General Panel */
+"General" = "General";
+"Launch at login" = "Launch at login";
+"Tildo launches when you start your Mac." = "Tildo launches when you start your Mac.";
+"Show in menu bar" = "Show in menu bar";
+"The Tildo icon lives in the top right." = "The Tildo icon lives in the top right.";
+"Sound on start and stop" = "Sound on start and stop";
+"A short tick, nothing intrusive." = "A short tick, nothing intrusive.";
+"Primary language" = "Primary language";
+"Tildo detects occasional switches to other languages." = "Tildo detects occasional switches to other languages.";
+"Output mode" = "Output mode";
+"Keyboard simulates keystrokes. Clipboard copies the text." = "Keyboard simulates keystrokes. Clipboard copies the text.";
+"Local mode." = "Local mode.";
+" Your voice is processed on this computer. No audio leaves your network." = " Your voice is processed on this computer. No audio leaves your network.";
+
+/* Shortcuts Panel */
+"Keyboard shortcuts" = "Keyboard shortcuts";
+"Global: work even when Tildo is in the background." = "Global: work even when Tildo is in the background.";
+"Record" = "Record";
+"Starts or stops transcription." = "Starts or stops transcription.";
+"Cancel recording" = "Cancel recording";
+"Stops and discards audio without transcribing." = "Stops and discards audio without transcribing.";
+"Unassigned" = "Unassigned";
+"Assign" = "Assign";
+"Change" = "Change";
+"Press the shortcut…" = "Press the shortcut…";
+"Cancel" = "Cancel";
+
+/* Privacy / About Panel */
+"Privacy" = "Privacy";
+"Local dictation for macOS" = "Local dictation for macOS";
+"Tildo on GitHub" = "Tildo on GitHub";
+"Report an issue" = "Report an issue";
+"Everything is processed on this Mac. No audio or text leaves the network." = "Everything is processed on this Mac. No audio or text leaves the network.";
+"Microphone" = "Microphone";
+"Records your voice for local transcription. Audio is fully processed on this device by whisper.cpp and discarded when done." = "Records your voice for local transcription. Audio is fully processed on this device by whisper.cpp and discarded when done.";
+"Accessibility" = "Accessibility";
+"Required for the global hotkey (CGEvent tap) and to simulate keystrokes in Keyboard mode." = "Required for the global hotkey (CGEvent tap) and to simulate keystrokes in Keyboard mode.";
+"Models" = "Models";
+"Downloaded model files (binary weights from OpenAI Whisper via whisper.cpp). You can delete them from Settings > Models." = "Downloaded model files (binary weights from OpenAI Whisper via whisper.cpp). You can delete them from Settings > Models.";
+"Settings" = "Settings";
+"Preferences, rules, and history. No analytics, telemetry, or crash reports." = "Preferences, rules, and history. No analytics, telemetry, or crash reports.";
+"Reset settings" = "Reset settings";
+"Restores all settings to their original values. Models and history will not be affected." = "Restores all settings to their original values. Models and history will not be affected.";
+"Reset" = "Reset";
+"Reset all settings?" = "Reset all settings?";
+"All settings will be restored to their default values. Downloaded models and history will not be affected." = "All settings will be restored to their default values. Downloaded models and history will not be affected.";
+
+/* Audio Panel */
+"Audio" = "Audio";
+"Chunk interval" = "Chunk interval";
+"How often audio is sent for transcription. Shorter = faster but more CPU." = "How often audio is sent for transcription. Shorter = faster but more CPU.";
+"Audio overlap" = "Audio overlap";
+"Audio carried over from the previous chunk to avoid cutting words at boundaries." = "Audio carried over from the previous chunk to avoid cutting words at boundaries.";
+"Silence threshold" = "Silence threshold";
+"The bar shows your microphone level in real time." = "The bar shows your microphone level in real time.";
+"Silence timeout" = "Silence timeout";
+"Seconds of continuous silence before auto-stopping." = "Seconds of continuous silence before auto-stopping.";
+
+/* Settings Sidebar */
+"SETTINGS" = "SETTINGS";
+"Shortcuts" = "Shortcuts";
+
+/* Main Sidebar */
+"Home" = "Home";
+"Dictionary" = "Dictionary";
+"Tones" = "Tones";
+"Notebook" = "Notebook";
+"SYSTEM" = "SYSTEM";
+"Tildo is free and lives on GitHub. A star means a lot." = "Tildo is free and lives on GitHub. A star means a lot.";
+"Star on GitHub" = "Star on GitHub";
+"Open source" = "Open source";
+
+/* Menu Content */
+"listening" = "listening";
+"transcribing…" = "transcribing…";
+"ready to dictate" = "ready to dictate";
+"DEFAULT TONE" = "DEFAULT TONE";
+"see per-app rules →" = "see per-app rules →";
+"Enable a model to use tones →" = "Enable a model to use tones →";
+"Normal" = "Normal";
+"No tone" = "No tone";
+"words today" = "words today";
+"loading model…" = "loading model…";
+"no model · download →" = "no model · download →";
+"Quit" = "Quit";
+
+/* Floating Window */
+"Done" = "Done";
+
+/* Inicio View */
+"Good morning" = "Good morning";
+"Good afternoon" = "Good afternoon";
+"Good evening" = "Good evening";
+"TODAY" = "TODAY";
+"words" = "words";
+"above your average" = "above your average";
+"STREAK" = "STREAK";
+"days" = "days";
+"in a row" = "in a row";
+"TIME SAVED" = "TIME SAVED";
+"this week" = "this week";
+"LANGUAGE" = "LANGUAGE";
+"MODEL" = "MODEL";
+"loading…" = "loading…";
+"loaded" = "loaded";
+"not loaded" = "not loaded";
+"Recent history" = "Recent history";
+"see all →" = "see all →";
+"Start dictating to see your history" = "Start dictating to see your history";
+"just now" = "just now";
+"%d min ago" = "%d min ago";
+"%d h ago" = "%d h ago";
+"Open" = "Open";
+"JUST NOW" = "JUST NOW";
+"%d MIN AGO" = "%d MIN AGO";
+"LAST TRANSCRIPTION · %@" = "LAST TRANSCRIPTION · %@";
+"Start dictating to see your last transcription" = "Start dictating to see your last transcription";
+"Claude Code active as AI engine" = "Claude Code active as AI engine";
+"If macOS requests system permissions (Photos, Music…), you can decline." = "If macOS requests system permissions (Photos, Music…), you can decline.";
+"Listening · %@" = "Listening · %@";
+
+/* LLM Panel */
+"Tones use an LLM to transform your dictation. You can dictate with or without it, but without an LLM there are no tone transformations." = "Tones use an LLM to transform your dictation. You can dictate with or without it, but without an LLM there are no tone transformations.";
+"Active: " = "Active: ";
+"No LLM configured." = "No LLM configured.";
+"Fast, natural, great translation. Recommended." = "Fast, natural, great translation. Recommended.";
+"Widely used. If you already have an account, this fits well." = "Widely used. If you already have an account, this fits well.";
+"Translate to" = "Translate to";
+"Disabled" = "Disabled";
+"Tildo only sends the transcribed text and the tone prompt. Never sends audio." = "Tildo only sends the transcribed text and the tone prompt. Never sends audio.";
+"Claude Code CLI connection successful." = "Claude Code CLI connection successful.";
+"The key is not valid. Check that it is an active key from %@." = "The key is not valid. Check that it is an active key from %@.";
+"Could not connect to %@. Check your connection." = "Could not connect to %@. Check your connection.";
+"Something failed." = "Something failed.";
+"ACTIVE" = "ACTIVE";
+"NO API KEY" = "NO API KEY";
+"Activate" = "Activate";
+"Show" = "Show";
+"TESTING CONNECTION…" = "TESTING CONNECTION…";
+"Detect" = "Detect";
+"Test" = "Test";
+
+/* App Rules Panel */
+"APP / TONE" = "APP / TONE";
+"Edit" = "Edit";
+"New rule" = "New rule";
+"Edit rule" = "Edit rule";
+"Assign a tone to a specific app." = "Assign a tone to a specific app.";
+"Add rule" = "Add rule";
+"Save rule" = "Save rule";
+"Select tone" = "Select tone";
+"App name" = "App name";
+"Already added" = "Already added";
+"Search app…" = "Search app…";
+
+/* Tones Panel */
+"Library" = "Library";
+"By app" = "By app";
+"No tones" = "No tones";
+"Create tones to control how AI rewrites your transcriptions." = "Create tones to control how AI rewrites your transcriptions.";
+"default" = "default";
+"Remove as default" = "Remove as default";
+"Set as default" = "Set as default";
+"Duplicate" = "Duplicate";
+"New tone" = "New tone";
+"Edit tone" = "Edit tone";
+"Define how to rewrite your dictation." = "Define how to rewrite your dictation.";
+"Name" = "Name";
+"Appears in the list and in per-app menus." = "Appears in the list and in per-app menus.";
+"e.g. Marketing, Casual, Work" = "e.g. Marketing, Casual, Work";
+"Start from…" = "Start from…";
+"Blank" = "Blank";
+"PREVIEW" = "PREVIEW";
+"TONE" = "TONE";
+"Result will appear here after a real recording." = "Result will appear here after a real recording.";
+"Save tone" = "Save tone";
+"e.g. Rewrite in marketing copy tone: short proposals, verb first…" = "e.g. Rewrite in marketing copy tone: short proposals, verb first…";
+
+/* Replacements Panel */
+"Search entries…" = "Search entries…";
+"No entries yet." = "No entries yet.";
+"No entries match." = "No entries match.";
+"Import…" = "Import…";
+"Export" = "Export";
+"New entry" = "New entry";
+"Edit entry" = "Edit entry";
+"Substitution applied after each transcription." = "Substitution applied after each transcription.";
+"text to detect" = "text to detect";
+"replacement" = "replacement";
+"name" = "name";
+"Case sensitive" = "Case sensitive";
+"Whole word only" = "Whole word only";
+"Save entry" = "Save entry";
+"All" = "All";

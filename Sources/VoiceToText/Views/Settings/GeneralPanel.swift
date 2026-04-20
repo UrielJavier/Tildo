@@ -37,8 +37,8 @@ struct GeneralPanel: View {
 
     private var switchesCard: some View {
         VStack(spacing: 0) {
-            settingRow(title: "Abrir al iniciar",
-                       desc: "Tildo se lanza al encender el Mac.") {
+            settingRow(title: "Launch at login",
+                       desc: "Tildo launches when you start your Mac.") {
                 DSToggleTrack(isOn: Binding(
                     get: { launchAtLogin },
                     set: { v in
@@ -49,14 +49,14 @@ struct GeneralPanel: View {
             }
             Divider().padding(.leading, 16)
 
-            settingRow(title: "Mostrar en barra de menús",
-                       desc: "El ícono de la tilde vive arriba a la derecha.") {
+            settingRow(title: "Show in menu bar",
+                       desc: "The Tildo icon lives in the top right.") {
                 DSToggleTrack(isOn: $state.showFloatingWindow.onChange { onSave() })
             }
             Divider().padding(.leading, 16)
 
-            settingRow(title: "Sonido al empezar y parar",
-                       desc: "Un tic muy corto, nada intrusivo.") {
+            settingRow(title: "Sound on start and stop",
+                       desc: "A short tick, nothing intrusive.") {
                 DSToggleTrack(isOn: Binding(
                     get: { state.startSound != .none },
                     set: { v in
@@ -77,8 +77,8 @@ struct GeneralPanel: View {
     private var selectorsCard: some View {
         VStack(spacing: 0) {
             // Language — zIndex(2) when open so dropdown renders above output row
-            selectorRow(title: "Idioma principal",
-                        desc: "Tildo detecta cambios puntuales al inglés.") {
+            selectorRow(title: "Primary language",
+                        desc: "Tildo detects occasional switches to other languages.") {
                 TildoDropdown(
                     items: Language.allCases,
                     isOpen: Binding(get: { openSelector == .language },
@@ -101,8 +101,8 @@ struct GeneralPanel: View {
             Divider().padding(.leading, 16)
 
             // Output mode
-            selectorRow(title: "Modo de salida",
-                        desc: "Teclado simula pulsaciones. Portapapeles copia el texto.") {
+            selectorRow(title: "Output mode",
+                        desc: "Keyboard simulates keystrokes. Clipboard copies the text.") {
                 TildoDropdown(
                     items: OutputMode.allCases,
                     isOpen: Binding(get: { openSelector == .outputMode },
@@ -200,8 +200,8 @@ struct GeneralPanel: View {
             Text("∼")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DS.Colors.mossInk)
-            (Text("Modo local.").font(DS.Fonts.sans(12, weight: .semibold)) +
-             Text(" Tu voz se procesa en este ordenador. Ningún audio sale a la red.")
+            (Text("Local mode.").font(DS.Fonts.sans(12, weight: .semibold)) +
+             Text(" Your voice is processed on this computer. No audio leaves your network.")
                 .font(DS.Fonts.sans(12)))
             .foregroundStyle(DS.Colors.mossInk)
         }

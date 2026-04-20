@@ -10,14 +10,14 @@ struct AtajosPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Atajos de teclado")
+            Text("Keyboard shortcuts")
                 .font(DS.Fonts.display(22))
                 .foregroundStyle(DS.Colors.ink)
                 .padding(.horizontal, 28)
                 .padding(.top, 24)
                 .padding(.bottom, 4)
 
-            Text("Globales: funcionan aunque Tildo esté en segundo plano.")
+            Text("Global: work even when Tildo is in the background.")
                 .font(DS.Fonts.sans(13))
                 .foregroundStyle(DS.Colors.ink3)
                 .padding(.horizontal, 28)
@@ -32,8 +32,8 @@ struct AtajosPanel: View {
     private var shortcutsCard: some View {
         VStack(spacing: 0) {
             ShortcutRow(
-                title: "Grabar",
-                description: "Inicia o detiene la transcripción.",
+                title: "Record",
+                description: "Starts or stops transcription.",
                 keyCode: $state.hotkeyKeyCode,
                 modifiers: $state.hotkeyModifiers,
                 onPauseHotkey: onPauseHotkey,
@@ -44,8 +44,8 @@ struct AtajosPanel: View {
             Divider().padding(.leading, 16)
 
             ShortcutRow(
-                title: "Cancelar grabación",
-                description: "Detiene y descarta el audio sin transcribir.",
+                title: "Cancel recording",
+                description: "Stops and discards audio without transcribing.",
                 keyCode: $state.cancelKeyCode,
                 modifiers: $state.cancelModifiers,
                 onChange: { onCancelHotkeyChange?(); onSave() }
@@ -116,7 +116,7 @@ private struct ShortcutRow: View {
     private var staticControls: some View {
         HStack(spacing: 10) {
             if isUnassigned {
-                Text("Sin asignar")
+                Text("Unassigned")
                     .font(DS.Fonts.sans(12))
                     .foregroundStyle(DS.Colors.ink4)
                     .italic()
@@ -130,7 +130,7 @@ private struct ShortcutRow: View {
                 )
             }
 
-            Button(isUnassigned ? "Asignar" : "Cambiar") { startEditing() }
+            Button(isUnassigned ? "Assign" : "Change") { startEditing() }
                 .buttonStyle(ShortcutChipButton())
         }
     }
@@ -148,7 +148,7 @@ private struct ShortcutRow: View {
                         isLive: true
                     )
                 } else {
-                    Text("Pulsa el atajo…")
+                    Text("Press the shortcut…")
                         .font(DS.Fonts.sans(12))
                         .foregroundStyle(DS.Colors.ink4)
                         .italic()
@@ -165,7 +165,7 @@ private struct ShortcutRow: View {
                     .transition(.scale.combined(with: .opacity))
             }
 
-            Button("Cancelar") { cancelEditing() }
+            Button("Cancel") { cancelEditing() }
                 .buttonStyle(ShortcutChipButton())
         }
         .animation(.easeInOut(duration: 0.1), value: hasPendingCombo)

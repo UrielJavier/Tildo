@@ -49,10 +49,10 @@ struct LLMPanel: View {
 
     private var titleBlock: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Modelo de lenguaje")
+            Text("LLM")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(DS.Colors.ink)
-            Text("Los tonos usan un LLM para transformar tu dictado. Dicta igual con o sin él, pero sin LLM no hay transformaciones de tono.")
+            Text("Tones use an LLM to transform your dictation. You can dictate with or without it, but without an LLM there are no tone transformations.")
                 .font(DS.Fonts.sans(12.5))
                 .foregroundStyle(DS.Colors.ink3)
                 .fixedSize(horizontal: false, vertical: true)
@@ -66,11 +66,11 @@ struct LLMPanel: View {
         if let active = activeProvider {
             HStack(spacing: 8) {
                 Circle().fill(DS.Colors.moss).frame(width: 7, height: 7)
-                (Text("Activo: ").bold() + Text(bannerLabel(active)))
+                (Text("Active: ").bold() + Text(bannerLabel(active)))
                     .font(DS.Fonts.sans(12.5))
                     .foregroundStyle(DS.Colors.mossInk)
                 Spacer()
-                Button("Cambiar") { deactivate() }
+                Button("Change") { deactivate() }
                     .buttonStyle(LLMGhostButton())
             }
             .padding(.horizontal, 14).padding(.vertical, 10)
@@ -80,8 +80,8 @@ struct LLMPanel: View {
         } else {
             HStack(alignment: .top, spacing: 8) {
                 Circle().fill(DS.Colors.ink4).frame(width: 7, height: 7).padding(.top, 4)
-                (Text("Sin LLM configurado.").bold() +
-                 Text(" Tildo dicta con Whisper sin problemas. Elige un proveedor para activar los tonos."))
+                (Text("No LLM configured.").bold() +
+                 Text(" Tildo dictates with Whisper just fine. Choose a provider to enable tones."))
                     .font(DS.Fonts.sans(12.5))
                     .foregroundStyle(DS.Colors.ink2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -99,7 +99,7 @@ struct LLMPanel: View {
 
     private func bannerLabel(_ provider: LLMProvider) -> String {
         switch provider {
-        case .claudeCode: return "Claude Code CLI · sesión local"
+        case .claudeCode: return "Claude Code CLI · local session"
         case .anthropic:  return "Anthropic · \(state.llmModel.isEmpty ? "Claude Haiku 4.5" : state.llmModel)"
         case .openAI:     return "OpenAI · \(state.llmModel.isEmpty ? "GPT-4o mini" : state.llmModel)"
         case .groq:       return "Groq · \(state.llmModel)"
@@ -115,7 +115,7 @@ struct LLMPanel: View {
             apiCard(
                 provider: .anthropic,
                 logo: LLMProviderLogo(symbol: "A", bg: Color(hex: "1a1a1a"), fg: Color(hex: "c96442")),
-                tagline: "Rápido, natural en español, muy buena traducción. Recomendado.",
+                tagline: "Fast, natural, great translation. Recommended.",
                 selectedModel: $anthropicModel,
                 keyBinding: $anthropicKey,
                 placeholder: "sk-ant-…"
@@ -124,7 +124,7 @@ struct LLMPanel: View {
             apiCard(
                 provider: .openAI,
                 logo: LLMProviderLogo(symbol: "⊕", bg: Color(hex: "1a1a1a"), fg: .white),
-                tagline: "Muy extendido. Si ya tienes cuenta, aquí encaja.",
+                tagline: "Widely used. If you already have an account, this fits well.",
                 selectedModel: $openAIModel,
                 keyBinding: $openAIKey,
                 placeholder: "sk-proj-…"
@@ -286,7 +286,7 @@ struct LLMPanel: View {
     // MARK: - Footer
 
     private var privacyFooter: some View {
-        Text("Tildo envía solo el texto transcrito y el prompt del tono. Nunca envía audio.")
+        Text("Tildo only sends the transcribed text and the tone prompt. Never sends audio.")
             .font(DS.Fonts.sans(11.5))
             .foregroundStyle(DS.Colors.ink3)
             .fixedSize(horizontal: false, vertical: true)
@@ -368,7 +368,7 @@ struct LLMPanel: View {
                 translateTo: nil
             )
             testingProvider = nil
-            showToast("Conexión con Claude Code CLI correcta.")
+            showToast(String(localized: "Claude Code CLI connection successful."))
         } catch {
             testingProvider = nil
             showToast(toastMessage(error, provider: .claudeCode))
@@ -421,13 +421,13 @@ struct LLMPanel: View {
     private func toastMessage(_ error: Error, provider: LLMProvider) -> String {
         let msg = error.localizedDescription.lowercased()
         if msg.contains("401") || msg.contains("unauthorized") || msg.contains("invalid") {
-            return "La clave no es válida. Revisa que sea una clave activa de \(provider.displayName)."
+            return String(format: String(localized: "The key is not valid. Check that it is an active key from %@."), provider.displayName)
         } else if msg.contains("429") {
-            return "\(provider.displayName) ha devuelto 429. Espera unos segundos."
+            return "\(provider.displayName) returned 429. Wait a few seconds."
         } else if msg.contains("network") || msg.contains("connect") || msg.contains("offline") || msg.contains("timed out") {
-            return "No se pudo conectar con \(provider.displayName). Revisa tu conexión."
+            return String(format: String(localized: "Could not connect to %@. Check your connection."), provider.displayName)
         }
-        return "Algo falló. \(error.localizedDescription)"
+        return String(format: String(localized: "Something failed.") + " %@", error.localizedDescription)
     }
 }
 
@@ -544,7 +544,7 @@ private struct LLMActiveBadge: View {
     var body: some View {
         HStack(spacing: 4) {
             Circle().fill(DS.Colors.moss).frame(width: 6, height: 6)
-            Text("ACTIVO")
+            Text("ACTIVE")
                 .font(DS.Fonts.mono(10, weight: .medium))
                 .foregroundStyle(DS.Colors.mossInk)
                 .tracking(0.4)
@@ -555,7 +555,7 @@ private struct LLMActiveBadge: View {
 
 private struct LLMNoAPIKeyBadge: View {
     var body: some View {
-        Text("SIN API KEY")
+        Text("NO API KEY")
             .font(DS.Fonts.mono(9, weight: .medium))
             .foregroundStyle(DS.Colors.paper)
             .tracking(0.4)
@@ -588,7 +588,7 @@ private struct LLMIdleKeyRow: View {
                 .foregroundStyle(DS.Colors.ink)
                 .frame(maxWidth: .infinity)
 
-            Button("Activar") { onActivate() }
+            Button("Activate") { onActivate() }
                 .buttonStyle(LLMActivateButton())
                 .disabled(key.isEmpty)
                 .padding(.trailing, 6)
@@ -631,12 +631,12 @@ private struct LLMActiveKeyRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
 
-            Button("Mostrar") { onShow() }
+            Button("Show") { onShow() }
                 .buttonStyle(.plain)
                 .font(DS.Fonts.sans(11.5))
                 .foregroundStyle(DS.Colors.ink3)
 
-            Button("Cambiar") { onChangeKey() }
+            Button("Change") { onChangeKey() }
                 .buttonStyle(LLMGhostButton())
                 .padding(.trailing, 6)
         }
@@ -662,7 +662,7 @@ private struct LLMTestingRow: View {
                         rotating = true
                     }
                 }
-            Text("PROBANDO CONEXIÓN…")
+            Text("TESTING CONNECTION…")
                 .font(DS.Fonts.mono(11))
                 .foregroundStyle(DS.Colors.mossInk)
                 .tracking(0.3)
@@ -697,7 +697,7 @@ private struct LLMCLIIdleRow: View {
             .font(DS.Fonts.sans(12))
             .foregroundStyle(DS.Colors.ink2)
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button("Detectar") { onDetect() }
+            Button("Detect") { onDetect() }
                 .buttonStyle(LLMActivateButton())
                 .padding(.trailing, 6)
         }
@@ -726,9 +726,9 @@ private struct LLMCLIActiveRow: View {
             }
             .font(DS.Fonts.mono(11))
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button("Probar") { onTest() }
+            Button("Test") { onTest() }
                 .buttonStyle(LLMGhostButton())
-            Button("Cambiar") { onDeactivate() }
+            Button("Change") { onDeactivate() }
                 .buttonStyle(LLMGhostButton())
                 .padding(.trailing, 6)
         }

@@ -104,7 +104,7 @@ private struct SettingsSidebar: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                Text("AJUSTES")
+                Text("SETTINGS")
                     .font(DS.Fonts.mono(10.5, weight: .medium))
                     .foregroundStyle(DS.Colors.ink4)
                     .tracking(0.6)
@@ -150,7 +150,7 @@ private struct SidebarItem: View {
                     .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(isSelected ? DS.Colors.ink : DS.Colors.ink3)
                     .frame(width: 16, alignment: .center)
-                Text(section.rawValue)
+                Text(LocalizedStringKey(section.rawValue))
                     .font(DS.Fonts.sans(12.5, weight: isSelected ? .semibold : .regular))
                     .foregroundStyle(isSelected ? DS.Colors.ink : DS.Colors.ink2)
                 Spacer()

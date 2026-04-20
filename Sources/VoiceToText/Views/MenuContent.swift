@@ -80,7 +80,7 @@ private struct PopoverHeader: View {
         case .recording:
             HStack(spacing: 5) {
                 RecDot()
-                Text("escuchando")
+                Text("listening")
                     .font(DS.Fonts.mono(11))
                     .foregroundStyle(DS.Colors.ink2)
             }
@@ -90,12 +90,12 @@ private struct PopoverHeader: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(DS.Colors.moss)
                     .modifier(TildeWave())
-                Text("transcribiendo…")
+                Text("transcribing…")
                     .font(DS.Fonts.mono(11))
                     .foregroundStyle(DS.Colors.ink2)
             }
         default:
-            Text("listo para dictar")
+            Text("ready to dictate")
                 .font(DS.Fonts.mono(11))
                 .foregroundStyle(DS.Colors.ink3)
         }
@@ -120,13 +120,13 @@ private struct ToneRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("TONO POR DEFECTO")
+                Text("DEFAULT TONE")
                     .font(DS.Fonts.mono(10, weight: .medium))
                     .foregroundStyle(DS.Colors.ink4)
                     .tracking(0.4)
 
                 Button(action: llmActive ? onRules : onLLM) {
-                    Text(llmActive ? "ver reglas por app →" : "Activa un modelo para usar tonos →")
+                    Text(llmActive ? "see per-app rules →" : "Enable a model to use tones →")
                         .font(DS.Fonts.sans(12))
                         .foregroundStyle(DS.Colors.mossInk)
                         .underline()
@@ -144,7 +144,7 @@ private struct ToneRow: View {
     private var toneChip: some View {
         if llmActive {
             Menu {
-                Button("Normal") { state.defaultToneId = nil }
+                Button(String(localized: "Normal")) { state.defaultToneId = nil }
                 if !state.tones.isEmpty { Divider() }
                 ForEach(state.tones) { tone in
                     Button(tone.name) { state.defaultToneId = tone.id }
@@ -177,7 +177,7 @@ private struct ToneRow: View {
                 Circle()
                     .fill(DS.Colors.ink4)
                     .frame(width: 6, height: 6)
-                Text("Sin tono")
+                Text("No tone")
                     .font(DS.Fonts.sans(12, weight: .medium))
                     .foregroundStyle(DS.Colors.ink4)
             }
@@ -219,7 +219,7 @@ private struct StatsStrip: View {
                     .font(DS.Fonts.sans(13, weight: .semibold))
                     .foregroundStyle(DS.Colors.ink)
                     .kerning(-0.2)
-                Text("palabras hoy")
+                Text("words today")
                     .font(DS.Fonts.sans(13))
                     .foregroundStyle(DS.Colors.ink3)
             }
@@ -229,12 +229,12 @@ private struct StatsStrip: View {
                     .font(DS.Fonts.mono(10.5))
                     .foregroundStyle(DS.Colors.ink3)
             } else if state.isLoadingModel {
-                Text("cargando modelo…")
+                Text("loading model…")
                     .font(DS.Fonts.mono(10.5))
                     .foregroundStyle(DS.Colors.ink3)
             } else {
                 Button(action: onModelos) {
-                    Text("sin modelo · descargar →")
+                    Text("no model · download →")
                         .font(DS.Fonts.mono(10.5))
                         .foregroundStyle(DS.Colors.mossInk)
                 }
@@ -255,11 +255,11 @@ private struct PopoverFooter: View {
     var body: some View {
         HStack {
             Spacer()
-            FooterLink("Ajustes", action: onSettings)
+            FooterLink(String(localized: "Settings"), action: onSettings)
             midDot
-            FooterLink("Cuaderno", action: onHistory)
+            FooterLink(String(localized: "Notebook"), action: onHistory)
             midDot
-            FooterLink("Salir", action: onQuit)
+            FooterLink(String(localized: "Quit"), action: onQuit)
             Spacer()
         }
     }

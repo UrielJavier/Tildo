@@ -24,8 +24,8 @@ struct TranscriptionPanel: View {
     private var audioCard: some View {
         VStack(spacing: 0) {
             sliderRow(
-                title: "Intervalo de chunk",
-                desc: "Cada cuánto se envía audio a transcribir. Más corto = más rápido pero más CPU.",
+                title: "Chunk interval",
+                desc: "How often audio is sent for transcription. Shorter = faster but more CPU.",
                 value: $state.liveChunkInterval,
                 range: 1...5, step: 0.5,
                 display: String(format: "%.1f s", state.liveChunkInterval)
@@ -34,8 +34,8 @@ struct TranscriptionPanel: View {
             Divider().padding(.leading, 16)
 
             sliderRow(
-                title: "Solapamiento de audio",
-                desc: "Audio heredado del chunk anterior para evitar cortar palabras en el límite.",
+                title: "Audio overlap",
+                desc: "Audio carried over from the previous chunk to avoid cutting words at boundaries.",
                 value: Binding(
                     get: { Double(state.liveOverlapMs) },
                     set: { state.liveOverlapMs = Int($0); onSave() }
@@ -50,10 +50,10 @@ struct TranscriptionPanel: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Umbral de silencio")
+                        Text("Silence threshold")
                             .font(DS.Fonts.sans(13, weight: .medium))
                             .foregroundStyle(DS.Colors.ink)
-                        Text("La barra muestra el nivel del micrófono en tiempo real.")
+                        Text("The bar shows your microphone level in real time.")
                             .font(DS.Fonts.sans(12))
                             .foregroundStyle(DS.Colors.ink3)
                     }
@@ -77,8 +77,8 @@ struct TranscriptionPanel: View {
             Divider().padding(.leading, 16)
 
             sliderRow(
-                title: "Tiempo de silencio",
-                desc: "Segundos de silencio continuo antes de detener automáticamente.",
+                title: "Silence timeout",
+                desc: "Seconds of continuous silence before auto-stopping.",
                 value: $state.liveSilenceTimeout,
                 range: 4...60, step: 2,
                 display: String(format: "%.0f s", state.liveSilenceTimeout)

@@ -1,0 +1,195 @@
+/* General Panel */
+"General" = "General";
+"Launch at login" = "Abrir al iniciar";
+"Tildo launches when you start your Mac." = "Tildo se lanza al encender el Mac.";
+"Show in menu bar" = "Mostrar en barra de menús";
+"The Tildo icon lives in the top right." = "El ícono de la tilde vive arriba a la derecha.";
+"Sound on start and stop" = "Sonido al empezar y parar";
+"A short tick, nothing intrusive." = "Un tic muy corto, nada intrusivo.";
+"Primary language" = "Idioma principal";
+"Tildo detects occasional switches to other languages." = "Tildo detecta cambios puntuales a otros idiomas.";
+"Output mode" = "Modo de salida";
+"Keyboard simulates keystrokes. Clipboard copies the text." = "Teclado simula pulsaciones. Portapapeles copia el texto.";
+"Local mode." = "Modo local.";
+" Your voice is processed on this computer. No audio leaves your network." = " Tu voz se procesa en este ordenador. Ningún audio sale a la red.";
+
+/* Shortcuts Panel */
+"Keyboard shortcuts" = "Atajos de teclado";
+"Global: work even when Tildo is in the background." = "Globales: funcionan aunque Tildo esté en segundo plano.";
+"Record" = "Grabar";
+"Starts or stops transcription." = "Inicia o detiene la transcripción.";
+"Cancel recording" = "Cancelar grabación";
+"Stops and discards audio without transcribing." = "Detiene y descarta el audio sin transcribir.";
+"Unassigned" = "Sin asignar";
+"Assign" = "Asignar";
+"Change" = "Cambiar";
+"Press the shortcut…" = "Pulsa el atajo…";
+"Cancel" = "Cancelar";
+
+/* Privacy / About Panel */
+"Privacy" = "Privacidad";
+"Local dictation for macOS" = "Dictado local para macOS";
+"Tildo on GitHub" = "Tildo en GitHub";
+"Report an issue" = "Reportar un problema";
+"Everything is processed on this Mac. No audio or text leaves the network." = "Todo se procesa en este Mac. Ningún audio ni texto sale a la red.";
+"Microphone" = "Micrófono";
+"Records your voice for local transcription. Audio is fully processed on this device by whisper.cpp and discarded when done." = "Graba tu voz para la transcripción local. El audio se procesa íntegramente en este dispositivo con whisper.cpp y se descarta al terminar.";
+"Accessibility" = "Accesibilidad";
+"Required for the global hotkey (CGEvent tap) and to simulate keystrokes in Keyboard mode." = "Necesario para el hotkey global (CGEvent tap) y para simular pulsaciones de teclado en modo Teclado.";
+"Models" = "Modelos";
+"Downloaded model files (binary weights from OpenAI Whisper via whisper.cpp). You can delete them from Settings > Models." = "Archivos de modelo descargados (pesos binarios de OpenAI Whisper, vía whisper.cpp). Puedes eliminarlos desde Ajustes > Modelos.";
+"Settings" = "Ajustes";
+"Preferences, rules, and history. No analytics, telemetry, or crash reports." = "Preferencias, reglas y historial. Sin analíticas, telemetría ni reportes de errores.";
+"Reset settings" = "Restablecer ajustes";
+"Restores all settings to their original values. Models and history will not be affected." = "Restaura todos los ajustes a sus valores originales. Los modelos y el historial no se verán afectados.";
+"Reset" = "Restablecer";
+"Reset all settings?" = "¿Restablecer todos los ajustes?";
+"All settings will be restored to their default values. Downloaded models and history will not be affected." = "Se restaurarán todos los ajustes a sus valores por defecto. Los modelos descargados y el historial no se verán afectados.";
+
+/* Audio Panel */
+"Audio" = "Audio";
+"Chunk interval" = "Intervalo de chunk";
+"How often audio is sent for transcription. Shorter = faster but more CPU." = "Cada cuánto se envía audio a transcribir. Más corto = más rápido pero más CPU.";
+"Audio overlap" = "Solapamiento de audio";
+"Audio carried over from the previous chunk to avoid cutting words at boundaries." = "Audio heredado del chunk anterior para evitar cortar palabras en el límite.";
+"Silence threshold" = "Umbral de silencio";
+"The bar shows your microphone level in real time." = "La barra muestra el nivel del micrófono en tiempo real.";
+"Silence timeout" = "Tiempo de silencio";
+"Seconds of continuous silence before auto-stopping." = "Segundos de silencio continuo antes de detener automáticamente.";
+
+/* Settings Sidebar */
+"SETTINGS" = "AJUSTES";
+"Shortcuts" = "Atajos";
+
+/* Main Sidebar */
+"Home" = "Inicio";
+"Dictionary" = "Diccionario";
+"Tones" = "Tonos";
+"Notebook" = "Cuaderno";
+"SYSTEM" = "SISTEMA";
+"Tildo is free and lives on GitHub. A star means a lot." = "Tildo es gratis y vive en GitHub. Una estrella anima mucho.";
+"Star on GitHub" = "Dar estrella";
+"Open source" = "Open source";
+
+/* Menu Content */
+"listening" = "escuchando";
+"transcribing…" = "transcribiendo…";
+"ready to dictate" = "listo para dictar";
+"DEFAULT TONE" = "TONO POR DEFECTO";
+"see per-app rules →" = "ver reglas por app →";
+"Enable a model to use tones →" = "Activa un modelo para usar tonos →";
+"Normal" = "Normal";
+"No tone" = "Sin tono";
+"words today" = "palabras hoy";
+"loading model…" = "cargando modelo…";
+"no model · download →" = "sin modelo · descargar →";
+"Quit" = "Salir";
+
+/* Floating Window */
+"Done" = "Listo";
+
+/* Inicio View */
+"Good morning" = "Buenos días";
+"Good afternoon" = "Buenas tardes";
+"Good evening" = "Buenas noches";
+"TODAY" = "HOY";
+"words" = "palabras";
+"above your average" = "sobre tu media";
+"STREAK" = "RACHA";
+"days" = "días";
+"in a row" = "consecutivos";
+"TIME SAVED" = "TIEMPO AHORRADO";
+"this week" = "esta semana";
+"LANGUAGE" = "IDIOMA";
+"MODEL" = "MODELO";
+"loading…" = "cargando…";
+"loaded" = "en memoria";
+"not loaded" = "sin cargar";
+"Recent history" = "Historial reciente";
+"see all →" = "ver todo →";
+"Start dictating to see your history" = "Empieza a dictar para ver tu historial";
+"just now" = "ahora";
+"%d min ago" = "hace %d min";
+"%d h ago" = "hace %d h";
+"Open" = "Abrir";
+"JUST NOW" = "AHORA";
+"%d MIN AGO" = "HACE %d MIN";
+"LAST TRANSCRIPTION · %@" = "ÚLTIMA TRANSCRIPCIÓN · %@";
+"Start dictating to see your last transcription" = "Empieza a dictar para ver tu última transcripción";
+"Claude Code active as AI engine" = "Claude Code activo como motor de IA";
+"If macOS requests system permissions (Photos, Music…), you can decline." = "Si macOS solicita permisos del sistema (Fotos, Música…), puedes rechazarlos.";
+"Listening · %@" = "Escuchando · %@";
+
+/* LLM Panel */
+"Tones use an LLM to transform your dictation. You can dictate with or without it, but without an LLM there are no tone transformations." = "Los tonos usan un LLM para transformar tu dictado. Dicta igual con o sin él, pero sin LLM no hay transformaciones de tono.";
+"Active: " = "Activo: ";
+"No LLM configured." = "Sin LLM configurado.";
+"Fast, natural, great translation. Recommended." = "Rápido, natural en español, muy buena traducción. Recomendado.";
+"Widely used. If you already have an account, this fits well." = "Muy extendido. Si ya tienes cuenta, aquí encaja.";
+"Translate to" = "Traducir al";
+"Disabled" = "Desactivado";
+"Tildo only sends the transcribed text and the tone prompt. Never sends audio." = "Tildo envía solo el texto transcrito y el prompt del tono. Nunca envía audio.";
+"Claude Code CLI connection successful." = "Conexión con Claude Code CLI correcta.";
+"The key is not valid. Check that it is an active key from %@." = "La clave no es válida. Revisa que sea una clave activa de %@.";
+"Could not connect to %@. Check your connection." = "No se pudo conectar con %@. Revisa tu conexión.";
+"Something failed." = "Algo falló.";
+"ACTIVE" = "ACTIVO";
+"NO API KEY" = "SIN API KEY";
+"Activate" = "Activar";
+"Show" = "Mostrar";
+"TESTING CONNECTION…" = "PROBANDO CONEXIÓN…";
+"Detect" = "Detectar";
+"Test" = "Probar";
+
+/* App Rules Panel */
+"APP / TONE" = "APP / TONO";
+"Edit" = "Editar";
+"New rule" = "Nueva regla";
+"Edit rule" = "Editar regla";
+"Assign a tone to a specific app." = "Asigna un tono a una app específica.";
+"Add rule" = "Añadir regla";
+"Save rule" = "Guardar regla";
+"Select tone" = "Seleccionar tono";
+"App name" = "Nombre de la app";
+"Already added" = "Ya añadida";
+"Search app…" = "Buscar app…";
+
+/* Tones Panel */
+"Library" = "Biblioteca";
+"By app" = "Por aplicación";
+"No tones" = "Sin tonos";
+"Create tones to control how AI rewrites your transcriptions." = "Crea tonos para controlar cómo el AI reescribe tus transcripciones.";
+"default" = "por defecto";
+"Remove as default" = "Quitar como predeterminado";
+"Set as default" = "Establecer como predeterminado";
+"Duplicate" = "Duplicar";
+"New tone" = "Nuevo tono";
+"Edit tone" = "Editar tono";
+"Define how to rewrite your dictation." = "Define cómo reescribir tu dictado.";
+"Name" = "Nombre";
+"Appears in the list and in per-app menus." = "Aparece en la lista y en los menús por app.";
+"e.g. Marketing, Casual, Work" = "p.ej. Marketing, Informal, Trabajo";
+"Start from…" = "Empezar desde…";
+"Blank" = "En blanco";
+"PREVIEW" = "PREVISUALIZACIÓN";
+"TONE" = "TONO";
+"Result will appear here after a real recording." = "El resultado aparecerá aquí tras una grabación real.";
+"Save tone" = "Guardar tono";
+"e.g. Rewrite in marketing copy tone: short proposals, verb first…" = "p.ej. Reescribe en tono de marketing: propuestas cortas, verbo primero…";
+
+/* Replacements Panel */
+"Search entries…" = "Buscar entradas…";
+"No entries yet." = "Todavía no hay entradas.";
+"No entries match." = "Ninguna entrada coincide.";
+"Import…" = "Importar…";
+"Export" = "Exportar";
+"New entry" = "Nueva entrada";
+"Edit entry" = "Editar entrada";
+"Substitution applied after each transcription." = "Sustitución aplicada tras cada transcripción.";
+"text to detect" = "texto a detectar";
+"replacement" = "reemplazo";
+"name" = "nombre";
+"Case sensitive" = "Distingue mayúsculas";
+"Whole word only" = "Solo palabra completa";
+"Save entry" = "Guardar entrada";
+"All" = "Todos";

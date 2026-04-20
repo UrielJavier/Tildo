@@ -184,7 +184,7 @@ private struct RuleRow: View {
             .buttonStyle(.plain)
             .popover(isPresented: $showActions, arrowEdge: .trailing) {
                 VStack(spacing: 0) {
-                    PopoverAction(label: "Editar") { showActions = false; onEdit() }
+                    PopoverAction(label: String(localized: "Edit")) { showActions = false; onEdit() }
                     Divider()
                     PopoverAction(label: "Eliminar", color: DS.Colors.rec) { showActions = false; onDelete() }
                 }
@@ -397,9 +397,9 @@ struct AppRuleEditSheet: View {
         VStack(spacing: 0) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(rule == nil ? "Nueva regla" : "Editar regla")
+                    Text(rule == nil ? "New rule" : "Edit rule")
                         .font(DS.Fonts.sans(18, weight: .semibold)).foregroundStyle(DS.Colors.ink)
-                    Text("Asigna un tono a una app específica.")
+                    Text("Assign a tone to a specific app.")
                         .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
                 }
                 Spacer()
@@ -422,12 +422,12 @@ struct AppRuleEditSheet: View {
                 if isBrowser {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("URL PATTERN").font(DS.Fonts.mono(10, weight: .medium)).foregroundStyle(DS.Colors.ink4).tracking(0.4)
-                        TextField("ej. github.com, mail.google.com", text: $urlPattern)
+                        TextField("e.g. github.com, mail.google.com", text: $urlPattern)
                             .textFieldStyle(.plain).font(.system(size: 13, design: .monospaced)).padding(10)
                             .background(DS.Colors.paper)
                             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                             .overlay(RoundedRectangle(cornerRadius: DS.Radius.sm).strokeBorder(DS.Colors.line, lineWidth: 1))
-                        Text("Déjalo vacío para cualquier URL.").font(DS.Fonts.sans(11)).foregroundStyle(DS.Colors.ink3)
+                        Text("Leave empty to match any URL.").font(DS.Fonts.sans(11)).foregroundStyle(DS.Colors.ink3)
                     }
                 }
 
@@ -447,7 +447,7 @@ struct AppRuleEditSheet: View {
                         isEnabled: rule?.isEnabled ?? true
                     ))
                 } label: {
-                    Text(rule == nil ? "Añadir regla" : "Guardar regla")
+                    Text(rule == nil ? "Add rule" : "Save rule")
                         .font(DS.Fonts.sans(13, weight: .semibold))
                         .foregroundStyle(DS.Colors.paper)
                         .frame(maxWidth: .infinity).padding(.vertical, 10)
@@ -465,7 +465,7 @@ struct AppRuleEditSheet: View {
 
     private var toneField: some View {
         HStack {
-            Text(tones.first(where: { $0.id == selectedToneId })?.name ?? "Seleccionar tono")
+            Text(tones.first(where: { $0.id == selectedToneId })?.name ?? String(localized: "Select tone"))
                 .font(DS.Fonts.sans(13))
                 .foregroundStyle(selectedToneId == nil ? DS.Colors.ink3 : DS.Colors.ink)
             Spacer()
@@ -510,7 +510,7 @@ struct AppRuleEditSheet: View {
             if let icon = allAppEntries.first(where: { $0.name == appName })?.icon {
                 Image(nsImage: icon).resizable().scaledToFit().frame(width: 18, height: 18)
             }
-            TextField("Nombre de la app", text: $appName)
+            TextField("App name", text: $appName)
                 .textFieldStyle(.plain)
                 .font(DS.Fonts.sans(13))
                 .focused($appFieldFocused)
@@ -668,7 +668,7 @@ private struct DropdownAppRow: View {
                     .foregroundStyle(isDisabled ? DS.Colors.ink4 : DS.Colors.ink)
                 Spacer()
                 if isDisabled {
-                    Text("Ya añadida")
+                    Text("Already added")
                         .font(DS.Fonts.mono(9))
                         .foregroundStyle(DS.Colors.ink4)
                 }
@@ -731,7 +731,7 @@ struct RunningAppPickerPopover: View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass").foregroundStyle(DS.Colors.ink3).font(.system(size: 12))
-                TextField("Buscar app…", text: $search)
+                TextField("Search app…", text: $search)
                     .textFieldStyle(.plain).font(DS.Fonts.sans(13))
             }
             .padding(.horizontal, 12).padding(.vertical, 8)

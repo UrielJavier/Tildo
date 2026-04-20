@@ -185,7 +185,7 @@ private struct MainSidebar: View {
             // Main nav items
             VStack(spacing: 1) {
                 MainSidebarItem(
-                    label: "Inicio",
+                    label: "Home",
                     icon: MainSection.inicio.icon,
                     badge: nil,
                     isSelected: state.selectedMainSection == .inicio
@@ -194,7 +194,7 @@ private struct MainSidebar: View {
                 }
 
                 MainSidebarItem(
-                    label: "Diccionario",
+                    label: "Dictionary",
                     icon: MainSection.diccionario.icon,
                     badge: state.replacementRules.isEmpty ? nil : "\(state.replacementRules.count)",
                     isSelected: state.selectedMainSection == .diccionario
@@ -203,7 +203,7 @@ private struct MainSidebar: View {
                 }
 
                 MainSidebarItem(
-                    label: "Tonos",
+                    label: "Tones",
                     icon: MainSection.tonos.icon,
                     badge: state.tones.isEmpty ? nil : "\(state.tones.count)",
                     isSelected: state.selectedMainSection == .tonos
@@ -212,7 +212,7 @@ private struct MainSidebar: View {
                 }
 
                 MainSidebarItem(
-                    label: "Cuaderno",
+                    label: "Notebook",
                     icon: MainSection.cuaderno.icon,
                     badge: nil,
                     isSelected: state.selectedMainSection == .cuaderno
@@ -222,7 +222,7 @@ private struct MainSidebar: View {
             }
             .padding(.horizontal, 4)
 
-            Text("SISTEMA")
+            Text("SYSTEM")
                 .font(DS.Fonts.mono(10, weight: .medium))
                 .foregroundStyle(DS.Colors.ink4)
                 .tracking(0.5)
@@ -232,7 +232,7 @@ private struct MainSidebar: View {
 
             VStack(spacing: 1) {
                 MainSidebarItem(
-                    label: "Ajustes",
+                    label: "Settings",
                     icon: "gearshape",
                     badge: nil,
                     isSelected: false
@@ -284,7 +284,7 @@ private struct GitHubCard: View {
                     .foregroundStyle(DS.Colors.ink)
             }
 
-            Text("Tildo es gratis y vive en GitHub. Una estrella anima mucho.")
+            Text("Tildo is free and lives on GitHub. A star means a lot.")
                 .font(DS.Fonts.sans(11))
                 .foregroundStyle(DS.Colors.ink3)
                 .fixedSize(horizontal: false, vertical: true)
@@ -295,7 +295,7 @@ private struct GitHubCard: View {
                 HStack(spacing: 6) {
                     Image(systemName: "star.fill")
                         .font(.system(size: 10, weight: .semibold))
-                    Text("Dar estrella")
+                    Text("Star on GitHub")
                         .font(DS.Fonts.sans(11.5, weight: .semibold))
                     Spacer()
                 }
@@ -321,7 +321,7 @@ private struct GitHubCard: View {
 // MARK: - Sidebar Item
 
 private struct MainSidebarItem: View {
-    let label: String
+    let label: LocalizedStringKey
     let icon: String
     let badge: String?
     let isSelected: Bool

@@ -9,7 +9,7 @@ struct AboutPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Privacidad")
+            Text("Privacy")
                 .font(DS.Fonts.display(22))
                 .foregroundStyle(DS.Colors.ink)
                 .padding(.horizontal, 28)
@@ -51,7 +51,7 @@ struct AboutPanel: View {
                             .font(DS.Fonts.mono(11))
                             .foregroundStyle(DS.Colors.ink4)
                     }
-                    Text("Dictado local para macOS")
+                    Text("Local dictation for macOS")
                         .font(DS.Fonts.sans(12))
                         .foregroundStyle(DS.Colors.ink3)
                 }
@@ -62,12 +62,12 @@ struct AboutPanel: View {
 
             DSDivider()
 
-            linkRow(label: "Tildo en GitHub", url: "https://github.com/UrielJavier/Tildo",
+            linkRow(label: "Tildo on GitHub", url: "https://github.com/UrielJavier/Tildo",
                     icon: "star")
 
             DSDivider()
 
-            linkRow(label: "Reportar un problema",
+            linkRow(label: "Report an issue",
                     url: "https://github.com/UrielJavier/Tildo/issues/new",
                     icon: "exclamationmark.bubble")
         }
@@ -84,7 +84,7 @@ struct AboutPanel: View {
                 Text("∼")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(DS.Colors.mossInk)
-                Text("Todo se procesa en este Mac. Ningún audio ni texto sale a la red.")
+                Text("Everything is processed on this Mac. No audio or text leaves the network.")
                     .font(DS.Fonts.sans(12))
                     .foregroundStyle(DS.Colors.mossInk)
             }
@@ -96,14 +96,14 @@ struct AboutPanel: View {
             DSDivider()
 
             permissionRow(icon: "mic",
-                          name: "Micrófono",
-                          desc: "Graba tu voz para la transcripción local. El audio se procesa íntegramente en este dispositivo con whisper.cpp y se descarta al terminar.")
+                          name: "Microphone",
+                          desc: "Records your voice for local transcription. Audio is fully processed on this device by whisper.cpp and discarded when done.")
 
             DSDivider()
 
             permissionRow(icon: "accessibility",
-                          name: "Accesibilidad",
-                          desc: "Necesario para el hotkey global (CGEvent tap) y para simular pulsaciones de teclado en modo Teclado.")
+                          name: "Accessibility",
+                          desc: "Required for the global hotkey (CGEvent tap) and to simulate keystrokes in Keyboard mode.")
         }
         .background(DS.Colors.card)
         .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Colors.line, lineWidth: 1))
@@ -115,16 +115,16 @@ struct AboutPanel: View {
     private var dataCard: some View {
         VStack(spacing: 0) {
             dataRow(icon: "brain",
-                    label: "Modelos",
+                    label: "Models",
                     path: "~/.voicetotext/models/",
-                    desc: "Archivos de modelo descargados (pesos binarios de OpenAI Whisper, vía whisper.cpp). Puedes eliminarlos desde Ajustes > Modelos.")
+                    desc: "Downloaded model files (binary weights from OpenAI Whisper via whisper.cpp). You can delete them from Settings > Models.")
 
             DSDivider()
 
             dataRow(icon: "gearshape",
-                    label: "Ajustes",
+                    label: "Settings",
                     path: "UserDefaults",
-                    desc: "Preferencias, reglas y historial. Sin analíticas, telemetría ni reportes de errores.")
+                    desc: "Preferences, rules, and history. No analytics, telemetry, or crash reports.")
         }
         .background(DS.Colors.card)
         .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Colors.line, lineWidth: 1))
@@ -136,27 +136,27 @@ struct AboutPanel: View {
     private var resetCard: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Restablecer ajustes")
+                Text("Reset settings")
                     .font(DS.Fonts.sans(13, weight: .medium))
                     .foregroundStyle(DS.Colors.ink)
-                Text("Restaura todos los ajustes a sus valores originales. Los modelos y el historial no se verán afectados.")
+                Text("Restores all settings to their original values. Models and history will not be affected.")
                     .font(DS.Fonts.sans(12))
                     .foregroundStyle(DS.Colors.ink3)
             }
             Spacer(minLength: 12)
-            Button("Restablecer") {
+            Button("Reset") {
                 showResetConfirmation = true
             }
             .buttonStyle(.dsDestructive)
-            .alert("¿Restablecer todos los ajustes?", isPresented: $showResetConfirmation) {
-                Button("Cancelar", role: .cancel) {}
-                Button("Restablecer", role: .destructive) {
+            .alert("Reset all settings?", isPresented: $showResetConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Reset", role: .destructive) {
                     state.resetToDefaults()
                     onSave()
                     onHotkeyChange?()
                 }
             } message: {
-                Text("Se restaurarán todos los ajustes a sus valores por defecto. Los modelos descargados y el historial no se verán afectados.")
+                Text("All settings will be restored to their default values. Downloaded models and history will not be affected.")
             }
         }
         .padding(.horizontal, 16)

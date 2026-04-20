@@ -49,7 +49,7 @@ struct ReplacementsPanel: View {
                         Text("\(state.replacementRules.count) ENTRADAS · \(allCategoryNames.count) CATEGORÍAS")
                             .font(DS.Fonts.mono(10, weight: .medium))
                             .foregroundStyle(DS.Colors.ink4).tracking(0.4)
-                        Text("Diccionario")
+                        Text("Dictionary")
                             .font(DS.Fonts.display(28))
                             .foregroundStyle(DS.Colors.ink).tracking(-0.4)
                     }
@@ -57,7 +57,7 @@ struct ReplacementsPanel: View {
                     Button { isCreating = true } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                            Text("Nueva entrada").font(DS.Fonts.sans(13, weight: .semibold))
+                            Text("New entry").font(DS.Fonts.sans(13, weight: .semibold))
                         }
                         .foregroundStyle(DS.Colors.paper)
                         .padding(.horizontal, 14).padding(.vertical, 8)
@@ -137,7 +137,7 @@ struct ReplacementsPanel: View {
     private var searchBar: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass").font(.system(size: 12)).foregroundStyle(DS.Colors.ink3)
-            TextField("Buscar entradas…", text: $searchText)
+            TextField("Search entries…", text: $searchText)
                 .textFieldStyle(.plain).font(DS.Fonts.sans(13))
         }
         .padding(.horizontal, 10).padding(.vertical, 7)
@@ -151,7 +151,7 @@ struct ReplacementsPanel: View {
     private var categoryChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                catChip(label: "Todas", color: DS.Colors.ink,
+                catChip(label: String(localized: "All"), color: DS.Colors.ink,
                         count: state.replacementRules.count, selected: filterCategory == nil,
                         onSelect: { filterCategory = nil }, onDelete: nil)
                 ForEach(allCategoryNames, id: \.self) { name in
@@ -178,7 +178,7 @@ struct ReplacementsPanel: View {
         HStack(spacing: 0) {
             Button(action: onSelect) {
                 HStack(spacing: 4) {
-                    if label != "Todas" { Circle().fill(selected ? Color.white : color).frame(width: 6, height: 6) }
+                    if label != String(localized: "All") { Circle().fill(selected ? Color.white : color).frame(width: 6, height: 6) }
                     Text(label).font(DS.Fonts.sans(11.5, weight: .medium))
                     Text("\(count)").font(DS.Fonts.sans(10.5))
                         .foregroundStyle(selected ? Color.white.opacity(0.6) : DS.Colors.ink3)
@@ -206,7 +206,7 @@ struct ReplacementsPanel: View {
     private var dictList: some View {
         VStack(spacing: 0) {
             if grouped.isEmpty {
-                Text(searchText.isEmpty ? "Sin entradas todavía." : "Ninguna entrada coincide.")
+                Text(searchText.isEmpty ? "No entries yet." : "No entries match.")
                     .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
                     .frame(maxWidth: .infinity).padding(24)
             }
@@ -244,8 +244,8 @@ struct ReplacementsPanel: View {
             Text("~/.voicetotext/replacements.json")
                 .font(DS.Fonts.mono(10.5)).foregroundStyle(DS.Colors.ink4)
             Spacer()
-            Button("Importar…") { }.buttonStyle(.dsSecondary)
-            Button("Exportar") { }.buttonStyle(.dsSecondary)
+            Button("Import…") { }.buttonStyle(.dsSecondary)
+            Button("Export") { }.buttonStyle(.dsSecondary)
         }
     }
 }
@@ -329,9 +329,9 @@ private struct ReplacementSidePanel: View {
             // Header
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(rule == nil ? "Nueva entrada" : "Editar entrada")
+                    Text(rule == nil ? "New entry" : "Edit entry")
                         .font(DS.Fonts.sans(18, weight: .semibold)).foregroundStyle(DS.Colors.ink)
-                    Text("Sustitución aplicada tras cada transcripción.")
+                    Text("Substitution applied after each transcription.")
                         .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
                 }
                 Spacer()
@@ -358,7 +358,7 @@ private struct ReplacementSidePanel: View {
                     // FIND
                     VStack(alignment: .leading, spacing: 6) {
                         Text("OÍDO").font(DS.Fonts.mono(10, weight: .medium)).foregroundStyle(DS.Colors.ink4).tracking(0.4)
-                        TextField("texto a detectar", text: $find)
+                        TextField("text to detect", text: $find)
                             .textFieldStyle(.plain).font(.system(size: 13, design: .monospaced))
                             .padding(10).background(DS.Colors.paper)
                             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
@@ -371,7 +371,7 @@ private struct ReplacementSidePanel: View {
                     // REPLACE
                     VStack(alignment: .leading, spacing: 6) {
                         Text("ESCRITO").font(DS.Fonts.mono(10, weight: .medium)).foregroundStyle(DS.Colors.ink4).tracking(0.4)
-                        TextField("reemplazo", text: $replace)
+                        TextField("replacement", text: $replace)
                             .textFieldStyle(.plain).font(.system(size: 13, weight: .medium, design: .monospaced))
                             .padding(10).background(DS.Colors.paper)
                             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
@@ -401,7 +401,7 @@ private struct ReplacementSidePanel: View {
                             // + Nueva categoría
                             if showNewCatField {
                                 HStack(spacing: 4) {
-                                    TextField("nombre", text: $newCatInput)
+                                    TextField("name", text: $newCatInput)
                                         .textFieldStyle(.plain).font(DS.Fonts.sans(11.5))
                                         .frame(width: 90)
                                     Button {
@@ -430,7 +430,7 @@ private struct ReplacementSidePanel: View {
                                 Button { showNewCatField = true } label: {
                                     HStack(spacing: 3) {
                                         Image(systemName: "plus").font(.system(size: 9, weight: .semibold))
-                                        Text("Nueva").font(DS.Fonts.sans(11.5))
+                                        Text("New").font(DS.Fonts.sans(11.5))
                                     }
                                     .padding(.horizontal, 10).padding(.vertical, 5)
                                     .background(RoundedRectangle(cornerRadius: 6).fill(Color.clear))
@@ -444,8 +444,8 @@ private struct ReplacementSidePanel: View {
                     // OPTIONS
                     VStack(alignment: .leading, spacing: 8) {
                         Text("OPCIONES").font(DS.Fonts.mono(10, weight: .medium)).foregroundStyle(DS.Colors.ink4).tracking(0.4)
-                        CheckRow(label: "Sensible a mayúsculas", isOn: $caseSensitive)
-                        CheckRow(label: "Solo palabra completa", isOn: $wholeWord)
+                        CheckRow(label: String(localized: "Case sensitive"), isOn: $caseSensitive)
+                        CheckRow(label: String(localized: "Whole word only"), isOn: $wholeWord)
                     }
 
                     // Save
@@ -460,7 +460,7 @@ private struct ReplacementSidePanel: View {
                             wholeWord: wholeWord
                         ))
                     } label: {
-                        Text("Guardar entrada")
+                        Text("Save entry")
                             .font(DS.Fonts.sans(13, weight: .semibold))
                             .foregroundStyle(DS.Colors.paper)
                             .frame(maxWidth: .infinity).padding(.vertical, 10)

@@ -123,10 +123,10 @@ enum StylePreset: String, CaseIterable, Identifiable {
 enum SettingsSection: String, CaseIterable, Identifiable {
     case general = "General"
     case audio = "Audio"
-    case modelos = "Modelos"
+    case modelos = "Models"
     case llm = "LLM"
-    case atajos = "Atajos"
-    case privacidad = "Privacidad"
+    case atajos = "Shortcuts"
+    case privacidad = "Privacy"
 
     var id: String { rawValue }
 
@@ -143,10 +143,10 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 }
 
 enum MainSection: String, Identifiable {
-    case inicio = "Inicio"
-    case diccionario = "Diccionario"
-    case tonos = "Tonos"
-    case cuaderno = "Cuaderno"
+    case inicio = "Home"
+    case diccionario = "Dictionary"
+    case tonos = "Tones"
+    case cuaderno = "Notebook"
 
     var id: String { rawValue }
 

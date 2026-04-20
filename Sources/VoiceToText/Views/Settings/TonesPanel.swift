@@ -36,7 +36,7 @@ struct TonesPanel: View {
                 Button { state.toneAddOpen = true } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                        Text("Nuevo tono").font(DS.Fonts.sans(13, weight: .semibold))
+                        Text("New tone").font(DS.Fonts.sans(13, weight: .semibold))
                     }
                     .foregroundStyle(DS.Colors.paper)
                     .padding(.horizontal, 14)
@@ -53,13 +53,13 @@ struct TonesPanel: View {
             // ── Tabs ─────────────────────────────────────
             HStack(spacing: 0) {
                 ToneTabButton(
-                    label: "Biblioteca",
+                    label: "Library",
                     count: state.tones.count,
                     isSelected: selectedTab == .biblioteca
                 ) { selectedTab = .biblioteca }
 
                 ToneTabButton(
-                    label: "Por aplicación",
+                    label: "By app",
                     count: appsConfigured,
                     isSelected: selectedTab == .porAplicacion
                 ) { selectedTab = .porAplicacion }
@@ -90,7 +90,7 @@ struct TonesPanel: View {
     @ViewBuilder
     private var bibliotecaContent: some View {
         // Intro
-        Text("Un **tono** es una forma de reescribir tu dictado. Crea los que quieras y asígnalos a cada app en la pestaña **Por aplicación**.")
+        Text("A **tone** is a way to rewrite your dictation. Create as many as you want and assign them per app in the **By app** tab.")
             .font(DS.Fonts.sans(13))
             .foregroundStyle(DS.Colors.ink2)
             .fixedSize(horizontal: false, vertical: true)
@@ -135,9 +135,9 @@ struct TonesPanel: View {
         VStack(spacing: 10) {
             Image(systemName: "wand.and.stars")
                 .font(.system(size: 28)).foregroundStyle(DS.Colors.ink3.opacity(0.4))
-            Text("Sin tonos")
+            Text("No tones")
                 .font(DS.Fonts.sans(14, weight: .medium)).foregroundStyle(DS.Colors.ink2)
-            Text("Crea tonos para controlar cómo el AI reescribe tus transcripciones.")
+            Text("Create tones to control how AI rewrites your transcriptions.")
                 .font(DS.Fonts.sans(12)).foregroundStyle(DS.Colors.ink3)
                 .multilineTextAlignment(.center)
         }
@@ -228,7 +228,7 @@ private struct ToneCard: View {
                             onEdit: { showActions = false; onEdit() },
                             onDuplicate: {
                                 showActions = false
-                                let copy = AppTone(id: UUID(), name: tone.name + " (copia)", description: tone.description, category: tone.category, stylePrompt: tone.stylePrompt, preview: tone.preview)
+                                let copy = AppTone(id: UUID(), name: tone.name + " (copy)", description: tone.description, category: tone.category, stylePrompt: tone.stylePrompt, preview: tone.preview)
                                 onDuplicate(copy)
                             },
                             onDelete: { showActions = false; onDelete() }
@@ -246,7 +246,7 @@ private struct ToneCard: View {
 
                 if isDefault || usageCount > 0 {
                     HStack(spacing: 5) {
-                        if isDefault { TagChip(label: "por defecto", style: .dark) }
+                        if isDefault { TagChip(label: String(localized: "default"), style: .dark) }
                         if usageCount > 0 { TagChip(label: "\(usageCount) app\(usageCount == 1 ? "" : "s")", style: .green) }
                     }
                     .padding(.top, 4)
@@ -277,13 +277,13 @@ private struct ToneActionsPopover: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            PopoverAction(label: isDefault ? "Quitar como defecto" : "Poner como defecto", action: onSetDefault)
+            PopoverAction(label: isDefault ? String(localized: "Remove as default") : String(localized: "Set as default"), action: onSetDefault)
             Divider()
-            PopoverAction(label: "Editar", action: onEdit)
+            PopoverAction(label: String(localized: "Edit"), action: onEdit)
             Divider()
-            PopoverAction(label: "Duplicar", action: onDuplicate)
+            PopoverAction(label: String(localized: "Duplicate"), action: onDuplicate)
             Divider()
-            PopoverAction(label: "Borrar", color: DS.Colors.rec, disabled: isDefault || usageCount > 0, disabledHint: "Quita el tono de todas las apps primero", action: onDelete)
+            PopoverAction(label: "Delete", color: DS.Colors.rec, disabled: isDefault || usageCount > 0, disabledHint: "Remove the tone from all apps first", action: onDelete)
         }
         .frame(width: 180)
         .background(DS.Colors.paper)
@@ -369,10 +369,10 @@ struct ToneSidePanel: View {
             // ── Header ────────────────────────────────────
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(tone == nil ? "Nuevo tono" : "Editar tono")
+                    Text(tone == nil ? "New tone" : "Edit tone")
                         .font(DS.Fonts.sans(18, weight: .semibold))
                         .foregroundStyle(DS.Colors.ink)
-                    Text("Define cómo reescribir tu dictado.")
+                    Text("Define how to rewrite your dictation.")
                         .font(DS.Fonts.sans(12))
                         .foregroundStyle(DS.Colors.ink3)
                 }
@@ -398,8 +398,8 @@ struct ToneSidePanel: View {
                 VStack(alignment: .leading, spacing: 20) {
 
                     // Nombre
-                    SidePanelField(label: "Nombre", hint: "Aparece en la lista y en los menús por app.") {
-                        TextField("ej. Marketing, Casual, Trabajo", text: $name)
+                    SidePanelField(label: "Name", hint: "Appears in the list and in per-app menus.") {
+                        TextField("e.g. Marketing, Casual, Work", text: $name)
                             .textFieldStyle(.plain)
                             .font(DS.Fonts.sans(14))
                             .padding(10)
@@ -411,11 +411,11 @@ struct ToneSidePanel: View {
                     // Partir de...
                     if !allTones.isEmpty {
                         HStack(spacing: 10) {
-                            Text("Partir de…")
+                            Text("Start from…")
                                 .font(DS.Fonts.sans(13, weight: .medium))
                                 .foregroundStyle(DS.Colors.ink2)
                             Picker("", selection: $basedOnId) {
-                                Text("En blanco").tag(UUID?.none)
+                                Text("Blank").tag(UUID?.none)
                                 ForEach(allTones) { t in
                                     Text(t.name).tag(Optional(t.id))
                                 }
@@ -432,7 +432,7 @@ struct ToneSidePanel: View {
                     // Instrucciones al modelo
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Text("Instrucciones al modelo")
+                            Text("Instructions")
                                 .font(DS.Fonts.sans(13, weight: .medium))
                                 .foregroundStyle(DS.Colors.ink2)
                             Spacer()
@@ -440,7 +440,7 @@ struct ToneSidePanel: View {
                                 .font(DS.Fonts.mono(10))
                                 .foregroundStyle(DS.Colors.ink4)
                         }
-                        TextField("ej. Reescribe en tono de copy de marketing: propuestas breves, verbo al principio…", text: $stylePrompt, axis: .vertical)
+                        TextField("e.g. Rewrite in marketing copy tone: short proposals, verb first…", text: $stylePrompt, axis: .vertical)
                             .textFieldStyle(.plain)
                             .font(.system(size: 12.5, design: .monospaced))
                             .lineLimit(5...10)
@@ -452,7 +452,7 @@ struct ToneSidePanel: View {
 
                     // Vista previa
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("VISTA PREVIA")
+                        Text("PREVIEW")
                             .font(DS.Fonts.mono(10, weight: .medium))
                             .foregroundStyle(DS.Colors.ink4)
                             .tracking(0.4)
@@ -472,11 +472,11 @@ struct ToneSidePanel: View {
                             Rectangle().fill(DS.Colors.line).frame(height: 1)
 
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(etiqueta.isEmpty ? (name.isEmpty ? "TONO" : name.uppercased()) : etiqueta.uppercased())
+                                Text(etiqueta.isEmpty ? (name.isEmpty ? String(localized: "TONE") : name.uppercased()) : etiqueta.uppercased())
                                     .font(DS.Fonts.mono(9, weight: .medium))
                                     .foregroundStyle(DS.Colors.moss)
                                     .tracking(0.3)
-                                Text(preview.isEmpty ? "El resultado aparecerá aquí después de una grabación real." : preview)
+                                Text(preview.isEmpty ? String(localized: "Result will appear here after a real recording.") : preview)
                                     .font(DS.Fonts.sans(13))
                                     .foregroundStyle(preview.isEmpty ? DS.Colors.ink4 : DS.Colors.ink2)
                                     .italic(preview.isEmpty)
@@ -499,7 +499,7 @@ struct ToneSidePanel: View {
                             preview: preview.trimmingCharacters(in: .whitespacesAndNewlines)
                         ))
                     } label: {
-                        Text("Guardar tono")
+                        Text("Save tone")
                             .font(DS.Fonts.sans(13, weight: .semibold))
                             .foregroundStyle(DS.Colors.paper)
                             .frame(maxWidth: .infinity)

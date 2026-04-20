@@ -29,6 +29,10 @@ cp "Sources/VoiceToText/Resources/Info.plist" "${APP_DIR}/Contents/Info.plist"
 cp "Sources/VoiceToText/Resources/github-mark.png" "${APP_DIR}/Contents/Resources/"
 cp "Sources/VoiceToText/Resources/github-mark-white.png" "${APP_DIR}/Contents/Resources/"
 
+# Copy localizations
+cp -R "Sources/VoiceToText/Resources/en.lproj" "${APP_DIR}/Contents/Resources/"
+cp -R "Sources/VoiceToText/Resources/es.lproj" "${APP_DIR}/Contents/Resources/"
+
 # Copy whisper framework
 cp -R "Frameworks/whisper.xcframework/macos-arm64_x86_64/whisper.framework" "${APP_DIR}/Contents/Frameworks/"
 

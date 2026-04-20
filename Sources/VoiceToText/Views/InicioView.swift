@@ -62,14 +62,14 @@ struct InicioView: View {
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
-        if hour < 13 { return "Buenos días" }
-        if hour < 20 { return "Buenas tardes" }
-        return "Buenas noches"
+        if hour < 13 { return String(localized: "Good morning") }
+        if hour < 20 { return String(localized: "Good afternoon") }
+        return String(localized: "Good evening")
     }
 
     private var dayTimeLabel: String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "es_ES")
+        formatter.locale = Locale.current
         formatter.dateFormat = "EEEE"
         let weekday = formatter.string(from: Date()).uppercased()
         let timeFormatter = DateFormatter()
@@ -94,7 +94,7 @@ struct InicioView: View {
                             Circle()
                                 .fill(DS.Colors.rec)
                                 .frame(width: 6, height: 6)
-                            Text("Escuchando · \(state.hotkeyLabel)")
+                            Text(String(format: String(localized: "Listening · %@"), state.hotkeyLabel))
                                 .font(DS.Fonts.sans(11.5))
                                 .foregroundStyle(DS.Colors.ink2)
                         }
@@ -133,12 +133,12 @@ struct InicioView: View {
                             Text("\(wordsToday)")
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundStyle(DS.Colors.ink)
-                            Text(" palabras")
+                            Text(" \(String(localized: "words"))")
                                 .font(DS.Fonts.sans(13))
                                 .foregroundStyle(DS.Colors.ink3)
                         }
 
-                        Text("sobre tu media")
+                        Text("above your average")
                             .font(DS.Fonts.sans(11))
                             .foregroundStyle(DS.Colors.ink4)
 
@@ -164,24 +164,24 @@ struct InicioView: View {
 
                 // Four stat cards
                 HStack(spacing: 10) {
-                    StatCard(label: "RACHA", value: "\(streak)", unit: "días", sub: "consecutivos")
+                    StatCard(label: String(localized: "STREAK"), value: "\(streak)", unit: String(localized: "days"), sub: String(localized: "in a row"))
                     StatCard(
-                        label: "TIEMPO AHORRADO",
+                        label: String(localized: "TIME SAVED"),
                         value: formatTimeSaved(timeSavedMinutes),
                         unit: "",
-                        sub: "esta semana"
+                        sub: String(localized: "this week")
                     )
                     StatCard(
-                        label: "IDIOMA",
+                        label: String(localized: "LANGUAGE"),
                         value: state.language.label,
                         unit: "",
-                        sub: state.language == .auto ? "+ inglés auto" : nil
+                        sub: state.language == .auto ? "+ auto" : nil
                     )
                     StatCard(
-                        label: "MODELO",
+                        label: String(localized: "MODEL"),
                         value: state.model.shortLabel,
                         unit: "",
-                        sub: state.isLoadingModel ? "cargando…" : state.isModelLoaded ? "en memoria" : "sin cargar"
+                        sub: state.isLoadingModel ? String(localized: "loading…") : state.isModelLoaded ? String(localized: "loaded") : String(localized: "not loaded")
                     )
                 }
                 .padding(.horizontal, 24)
@@ -190,13 +190,13 @@ struct InicioView: View {
                 // Historial reciente
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
-                        Text("Historial reciente")
+                        Text("Recent history")
                             .font(DS.Fonts.sans(13, weight: .semibold))
                             .foregroundStyle(DS.Colors.ink)
 
                         Spacer()
 
-                        Button("ver todo →") {
+                        Button(String(localized: "see all →")) {
                             onOpenCuaderno?()
                         }
                         .buttonStyle(.plain)
@@ -207,7 +207,7 @@ struct InicioView: View {
 
                     let recent = Array(state.history.prefix(3))
                     if recent.isEmpty {
-                        Text("Empieza a dictar para ver tu historial")
+                        Text("Start dictating to see your history")
                             .font(DS.Fonts.sans(12))
                             .foregroundStyle(DS.Colors.ink4)
                             .padding(.vertical, 12)
@@ -257,11 +257,11 @@ struct InicioView: View {
 
     private func relativeTime(from date: Date) -> String {
         let secs = Int(-date.timeIntervalSinceNow)
-        if secs < 60 { return "ahora" }
-        if secs < 3600 { return "hace \(secs / 60) min" }
-        if secs < 86400 { return "hace \(secs / 3600) h" }
+        if secs < 60 { return String(localized: "just now") }
+        if secs < 3600 { return String(format: String(localized: "%d min ago"), secs / 60) }
+        if secs < 86400 { return String(format: String(localized: "%d h ago"), secs / 3600) }
         let f = DateFormatter()
-        f.locale = Locale(identifier: "es_ES")
+        f.locale = Locale.current
         f.dateFormat = "d MMM"
         return f.string(from: date)
     }
@@ -277,10 +277,10 @@ private struct PermissionsBanner: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            PermissionDot(label: "Accesibilidad", granted: hasAccessibility) {
+            PermissionDot(label: String(localized: "Accessibility"), granted: hasAccessibility) {
                 openSettings("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
             }
-            PermissionDot(label: "Micrófono", granted: hasMicrophone) {
+            PermissionDot(label: String(localized: "Microphone"), granted: hasMicrophone) {
                 openSettings("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
             }
             Spacer()
@@ -323,7 +323,7 @@ private struct PermissionDot: View {
                 .font(DS.Fonts.sans(12))
                 .foregroundStyle(DS.Colors.ink2)
             if !granted {
-                Button("Abrir") { action() }
+                Button(String(localized: "Open")) { action() }
                     .buttonStyle(.plain)
                     .font(DS.Fonts.sans(11, weight: .semibold))
                     .foregroundStyle(DS.Colors.mossInk)
@@ -364,7 +364,7 @@ private struct LastTranscriptionCard: View {
     var body: some View {
         if let entry {
             VStack(alignment: .leading, spacing: 8) {
-                Text("ÚLTIMA TRANSCRIPCIÓN · \(minutesAgo(from: entry.date))")
+                Text(String(format: String(localized: "LAST TRANSCRIPTION · %@"), minutesAgo(from: entry.date)))
                     .font(DS.Fonts.mono(9, weight: .regular))
                     .foregroundStyle(DS.Colors.paper.opacity(0.5))
                     .tracking(0.3)
@@ -404,7 +404,7 @@ private struct LastTranscriptionCard: View {
         } else {
             VStack {
                 Spacer()
-                Text("Empieza a dictar para ver tu última transcripción")
+                Text("Start dictating to see your last transcription")
                     .font(DS.Fonts.sans(12))
                     .foregroundStyle(DS.Colors.ink4)
                     .multilineTextAlignment(.center)
@@ -423,8 +423,8 @@ private struct LastTranscriptionCard: View {
 
     private func minutesAgo(from date: Date) -> String {
         let mins = Int(-date.timeIntervalSinceNow) / 60
-        if mins < 1 { return "AHORA" }
-        return "HACE \(mins) MIN"
+        if mins < 1 { return String(localized: "JUST NOW") }
+        return String(format: String(localized: "%d MIN AGO"), mins)
     }
 }
 
@@ -437,7 +437,7 @@ private struct ClaudeCodeFooterBanner: View {
                 .font(.system(size: 11))
                 .foregroundStyle(DS.Colors.accent)
 
-            Text("Claude Code activo como motor de IA")
+            Text("Claude Code active as AI engine")
                 .font(DS.Fonts.sans(11, weight: .semibold))
                 .foregroundStyle(DS.Colors.ink2)
 
@@ -445,7 +445,7 @@ private struct ClaudeCodeFooterBanner: View {
                 .foregroundStyle(DS.Colors.ink4)
                 .font(DS.Fonts.sans(11))
 
-            Text("Si macOS solicita permisos del sistema (Fotos, Música…), puedes rechazarlos.")
+            Text("If macOS requests system permissions (Photos, Music…), you can decline.")
                 .font(DS.Fonts.sans(11))
                 .foregroundStyle(DS.Colors.ink3)
                 .lineLimit(1)
