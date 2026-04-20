@@ -62,13 +62,13 @@ struct AboutPanel: View {
 
             DSDivider()
 
-            linkRow(label: "Tildo en GitHub", url: "https://github.com/urieljavier/EchoWrite",
+            linkRow(label: "Tildo en GitHub", url: "https://github.com/UrielJavier/Tildo",
                     icon: "star")
 
             DSDivider()
 
             linkRow(label: "Reportar un problema",
-                    url: "https://github.com/urieljavier/EchoWrite/issues/new",
+                    url: "https://github.com/UrielJavier/Tildo/issues/new",
                     icon: "exclamationmark.bubble")
         }
         .background(DS.Colors.card)

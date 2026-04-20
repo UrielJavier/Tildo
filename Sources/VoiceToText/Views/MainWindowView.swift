@@ -290,7 +290,7 @@ private struct GitHubCard: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Button(action: {
-                NSWorkspace.shared.open(URL(string: "https://github.com/UrielJavier/EchoWrite")!)
+                NSWorkspace.shared.open(URL(string: "https://github.com/UrielJavier/Tildo")!)
             }) {
                 HStack(spacing: 6) {
                     Image(systemName: "star.fill")
