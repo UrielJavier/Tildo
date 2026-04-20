@@ -258,7 +258,7 @@ struct LLMPanel: View {
     private var translateCard: some View {
         settingsCard {
             HStack {
-                settingsRow("Traducir al", icon: "character.book.closed")
+                settingsRow("Translate to", icon: "character.book.closed")
                 Spacer()
                 Menu {
                     Button("Desactivado") { state.llmTranslateLanguage = nil; onSave() }

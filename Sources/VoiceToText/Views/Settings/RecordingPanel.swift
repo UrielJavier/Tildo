@@ -92,7 +92,7 @@ struct TranscriptionPanel: View {
     // MARK: - Helpers
 
     private func sliderRow(
-        title: String, desc: String,
+        title: LocalizedStringKey, desc: LocalizedStringKey,
         value: Binding<Double>,
         range: ClosedRange<Double>, step: Double,
         display: String

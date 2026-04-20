@@ -5,11 +5,13 @@ private struct UILanguageOption: Identifiable, Hashable {
     let id: String
     let label: String
 
-    static let all: [UILanguageOption] = [
-        .init(id: "system", label: "System"),
-        .init(id: "en",     label: "English"),
-        .init(id: "es",     label: "Español"),
-    ]
+    static var all: [UILanguageOption] {
+        [
+            .init(id: "system", label: String(localized: "System")),
+            .init(id: "en",     label: "English"),
+            .init(id: "es",     label: "Español"),
+        ]
+    }
 }
 
 struct GeneralPanel: View {
@@ -30,17 +32,21 @@ struct GeneralPanel: View {
                 .padding(.top, 24)
                 .padding(.bottom, 20)
 
-            switchesCard
-                .padding(.horizontal, 28)
-
             modoLocalBanner
                 .padding(.horizontal, 28)
-                .padding(.top, 12)
+                .zIndex(0)
 
             selectorsCard
                 .padding(.horizontal, 28)
                 .padding(.top, 12)
-                .padding(.bottom, 28)
+                .zIndex(1)
+
+            switchesCard
+                .padding(.horizontal, 28)
+                .padding(.top, 12)
+                .zIndex(0)
+
+            Spacer().frame(height: 28)
         }
     }
 
@@ -175,8 +181,8 @@ struct GeneralPanel: View {
 
     @ViewBuilder
     private func settingRow<Control: View>(
-        title: String,
-        desc: String,
+        title: LocalizedStringKey,
+        desc: LocalizedStringKey,
         @ViewBuilder control: () -> Control
     ) -> some View {
         HStack(alignment: .center, spacing: 12) {
@@ -192,8 +198,8 @@ struct GeneralPanel: View {
 
     @ViewBuilder
     private func selectorRow<DropdownContent: View>(
-        title: String,
-        desc: String,
+        title: LocalizedStringKey,
+        desc: LocalizedStringKey,
         @ViewBuilder dropdown: () -> DropdownContent
     ) -> some View {
         HStack(alignment: .center, spacing: 12) {

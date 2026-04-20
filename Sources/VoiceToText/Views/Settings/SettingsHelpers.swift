@@ -14,12 +14,13 @@ func settingsCard<Content: View>(@ViewBuilder content: () -> Content) -> some Vi
         .padding(.bottom, 10)
 }
 
-func panelHero(icon: String, title: String, subtitle: String? = nil) -> some View {
+func panelHero(icon: String, title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil) -> some View {
     VStack(alignment: .leading, spacing: 6) {
-        Text(title.uppercased())
+        Text(title)
             .font(DS.Fonts.mono(10.5, weight: .medium))
             .foregroundStyle(DS.Colors.moss)
             .tracking(0.6)
+            .textCase(.uppercase)
 
         Text(title)
             .font(.system(size: 28, weight: .semibold))
@@ -37,7 +38,7 @@ func panelHero(icon: String, title: String, subtitle: String? = nil) -> some Vie
 }
 
 // Simple row header used inside cards
-func settingsRow(_ title: String, icon: String, trailing: String? = nil) -> some View {
+func settingsRow(_ title: LocalizedStringKey, icon: String, trailing: String? = nil) -> some View {
     HStack(spacing: 10) {
         Image(systemName: icon)
             .font(.system(size: 13))
@@ -55,7 +56,7 @@ func settingsRow(_ title: String, icon: String, trailing: String? = nil) -> some
     }
 }
 
-func sectionHeader(_ title: String, subtitle: String? = nil) -> some View {
+func sectionHeader(_ title: LocalizedStringKey, subtitle: LocalizedStringKey? = nil) -> some View {
     VStack(alignment: .leading, spacing: 4) {
         Text(title)
             .font(.system(size: 18, weight: .semibold))

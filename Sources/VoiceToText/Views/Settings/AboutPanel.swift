@@ -188,7 +188,7 @@ struct AboutPanel: View {
         }
     }
 
-    private func permissionRow(icon: String, name: String, desc: String) -> some View {
+    private func permissionRow(icon: String, name: LocalizedStringKey, desc: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 10) {
                 Image(systemName: icon)
@@ -210,7 +210,7 @@ struct AboutPanel: View {
         .padding(.vertical, 12)
     }
 
-    private func dataRow(icon: String, label: String, path: String, desc: String) -> some View {
+    private func dataRow(icon: String, label: LocalizedStringKey, path: String, desc: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 10) {
                 Image(systemName: icon)
