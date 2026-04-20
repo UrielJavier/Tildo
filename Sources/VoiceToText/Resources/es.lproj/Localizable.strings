@@ -1,5 +1,8 @@
 /* General Panel */
 "General" = "General";
+"App language" = "Idioma de la app";
+"Language used in the Tildo interface." = "Idioma de la interfaz de Tildo.";
+"System" = "Sistema";
 "Launch at login" = "Abrir al iniciar";
 "Tildo launches when you start your Mac." = "Tildo se lanza al encender el Mac.";
 "Show in menu bar" = "Mostrar en barra de menús";

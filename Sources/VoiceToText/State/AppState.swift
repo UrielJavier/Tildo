@@ -15,6 +15,15 @@ final class AppState {
     var status: Status = .idle
     var lastError: String?
     var hasCompletedOnboarding: Bool = false
+    var uiLanguage: String = "system"
+
+    var resolvedLocale: Locale {
+        switch uiLanguage {
+        case "en": return Locale(identifier: "en")
+        case "es": return Locale(identifier: "es")
+        default:   return Locale.current
+        }
+    }
     var isModelLoaded = false
     var isLoadingModel = false
     var language: Language = .auto

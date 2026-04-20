@@ -120,6 +120,7 @@ struct MainWindowView: View {
         .animation(.spring(duration: 0.25), value: state.showSettings)
         .animation(.spring(duration: 0.28), value: state.ruleAddOpen || state.ruleEditing != nil)
         .animation(.spring(duration: 0.28), value: state.toneAddOpen || state.toneEditing != nil)
+        .environment(\.locale, state.resolvedLocale)
         .preferredColorScheme(.light)
     }
 

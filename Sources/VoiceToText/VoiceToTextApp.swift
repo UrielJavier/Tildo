@@ -7,6 +7,7 @@ struct VoiceToTextApp: App {
     var body: some Scene {
         MenuBarExtra {
             MenuContent(appDelegate: appDelegate)
+                .environment(\.locale, appDelegate.appState.resolvedLocale)
         } label: {
             let state = appDelegate.appState
             if state.isDownloading {

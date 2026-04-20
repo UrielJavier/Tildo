@@ -39,6 +39,7 @@ extension AppState {
         static let appTheme = "appTheme"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let customReplacementCategories = "customReplacementCategories"
+        static let uiLanguage = "uiLanguage"
     }
 
     private static let defaults = UserDefaults.standard
@@ -92,6 +93,7 @@ extension AppState {
         Self.defaults.set(showFloatingWindow, forKey: Keys.showFloatingWindow)
         Self.defaults.set(appTheme.rawValue, forKey: Keys.appTheme)
         Self.defaults.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding)
+        Self.defaults.set(uiLanguage, forKey: Keys.uiLanguage)
     }
 
     func restore() {
@@ -207,5 +209,6 @@ extension AppState {
         if Self.defaults.object(forKey: Keys.hasCompletedOnboarding) != nil {
             hasCompletedOnboarding = Self.defaults.bool(forKey: Keys.hasCompletedOnboarding)
         }
+        if let lang = Self.defaults.string(forKey: Keys.uiLanguage) { uiLanguage = lang }
     }
 }

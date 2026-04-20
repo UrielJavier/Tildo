@@ -1,6 +1,17 @@
 import ServiceManagement
 import SwiftUI
 
+private struct UILanguageOption: Identifiable, Hashable {
+    let id: String
+    let label: String
+
+    static let all: [UILanguageOption] = [
+        .init(id: "system", label: "System"),
+        .init(id: "en",     label: "English"),
+        .init(id: "es",     label: "Español"),
+    ]
+}
+
 struct GeneralPanel: View {
     @Bindable var state: AppState
     let onSave: () -> Void
@@ -8,7 +19,7 @@ struct GeneralPanel: View {
     @State private var openSelector: SelectorField? = nil
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
-    private enum SelectorField { case language, outputMode }
+    private enum SelectorField { case language, outputMode, uiLanguage }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -121,6 +132,31 @@ struct GeneralPanel: View {
                 }
             }
             .zIndex(openSelector == .outputMode ? 2 : 0)
+
+            Divider().padding(.leading, 16)
+
+            // App language
+            selectorRow(title: "App language",
+                        desc: "Language used in the Tildo interface.") {
+                let currentOption = UILanguageOption.all.first(where: { $0.id == state.uiLanguage }) ?? UILanguageOption.all[0]
+                TildoDropdown(
+                    items: UILanguageOption.all,
+                    isOpen: Binding(get: { openSelector == .uiLanguage },
+                                    set: { openSelector = $0 ? .uiLanguage : nil }),
+                    triggerHeight: rowTriggerHeight,
+                    onSelect: { opt in state.uiLanguage = opt.id; onSave() },
+                    minListWidth: 150,
+                    listAlignment: .topTrailing
+                ) {
+                    selectorTrigger(label: currentOption.label,
+                                    isOpen: openSelector == .uiLanguage,
+                                    action: { openSelector = openSelector == .uiLanguage ? nil : .uiLanguage })
+                } row: { opt, highlighted in
+                    TildoDropdownRow(label: opt.label, isHighlighted: highlighted,
+                                     isSelected: state.uiLanguage == opt.id)
+                }
+            }
+            .zIndex(openSelector == .uiLanguage ? 2 : 0)
         }
         // No clipShape — clip would hide the dropdown overlay that overflows the card bounds.
         // Shape is applied via background so children can overflow visually.
