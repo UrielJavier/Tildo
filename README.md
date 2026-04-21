@@ -47,29 +47,42 @@ Assign any key combination for record and cancel-recording from Settings → Ata
 
 ## Installation
 
-Download the latest `Tildo-x.x.x-arm64.zip` from the [Releases page](../../releases/latest), unzip it, and move `Tildo.app` to your Applications folder.
+1. Download the latest `Tildo-x.x.x-arm64.zip` from the [Releases page](../../releases/latest)
+2. Unzip and drag `Tildo.app` to your `/Applications` folder
 
-**First launch — macOS will block it** because the app isn't notarized. Three ways to open it:
+### Step 1 — Allow the app to run (required, one time only)
 
-**Option A — System Settings (recommended on macOS 15 Sequoia)**
-Try to open the app normally. macOS will block it. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**.
+Tildo isn't notarized, so macOS will block it on first launch. Pick the method for your macOS version:
 
-**Option B — Right-click (macOS 14 Sonoma)**
-Right-click `Tildo.app` → **Open** → click **Open** in the dialog. Only needed once. Does not work on macOS 15.
+**macOS 15 Sequoia**
 
-**Option C — Terminal**
+1. Double-click `Tildo.app` — macOS shows a "cannot be opened" dialog. Click **OK**.
+2. Open **System Settings → Privacy & Security**, scroll down.
+3. You'll see _"Tildo was blocked"_ — click **Open Anyway**, then **Open** to confirm.
+
+**macOS 14 Sonoma or earlier**
+
+Right-click (or Control-click) `Tildo.app` → **Open** → click **Open** in the dialog. Done.
+
+**Any version — Terminal (fastest)**
+
 ```bash
 xattr -cr /Applications/Tildo.app
 ```
 
-### Permissions
+Then double-click the app normally. You only need to do this once.
 
-Tildo needs two permissions:
+### Step 2 — Grant permissions (required, one time only)
 
-- **Microphone** — To record your voice. macOS will prompt on first launch.
-- **Accessibility** — To type text into other apps. Go to **System Settings → Privacy & Security → Accessibility** and enable Tildo.
+Tildo needs two permissions to work:
 
-Without Accessibility access the app transcribes normally but can't insert text — you'll need to paste manually (Clipboard output mode still works).
+**Microphone** — macOS will ask automatically on first launch. Click **Allow**.
+
+**Accessibility** — needed to type text into other apps.
+1. Open **System Settings → Privacy & Security → Accessibility**
+2. Toggle **Tildo** on
+
+> Without Accessibility, Tildo still transcribes — the text just won't be typed automatically. You can paste it manually with ⌘V (set Output to Clipboard in Settings).
 
 ## Build from source
 
