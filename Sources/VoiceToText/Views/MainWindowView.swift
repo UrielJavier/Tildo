@@ -70,11 +70,15 @@ struct MainWindowView: View {
                         existingAppNames: Set(state.appRules.map { $0.appName }),
                         onClose: { state.ruleAddOpen = false; state.ruleEditing = nil },
                         onSave: { saved in
-                            if let editing = state.ruleEditing,
-                               let idx = state.appRules.firstIndex(where: { $0.id == editing.id }) {
-                                state.appRules[idx] = saved
-                            } else {
-                                state.appRules.append(saved)
+                            // Mutate the list without animation so the ScrollView
+                            // doesn't animate its content height and flash the indicator.
+                            withTransaction(.init(animation: nil)) {
+                                if let editing = state.ruleEditing,
+                                   let idx = state.appRules.firstIndex(where: { $0.id == editing.id }) {
+                                    state.appRules[idx] = saved
+                                } else {
+                                    state.appRules.append(saved)
+                                }
                             }
                             onSave()
                             state.ruleAddOpen = false

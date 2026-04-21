@@ -17,8 +17,9 @@ struct FloatingRecordingView: View {
     private var modelShortName: String { appState.model.rawValue }
 
     private var activeToneName: String {
-        guard let id = appState.defaultToneId else { return "Tone" }
-        return appState.tones.first(where: { $0.id == id })?.name ?? "Tone"
+        appState.activeToneNameForRecording
+            ?? appState.tones.first(where: { $0.id == appState.defaultToneId })?.name
+            ?? "Tone"
     }
 
     var body: some View {

@@ -119,6 +119,7 @@ struct AppRulesPanel: View {
             DSDivider()
 
             ForEach(Array(state.appRules.enumerated()), id: \.element.id) { i, rule in
+                if i > 0 { DSDivider() }
                 RuleRow(
                     rule: $state.appRules[i],
                     toneName: state.tones.first(where: { $0.id == rule.toneId })?.name ?? "—",
@@ -129,9 +130,9 @@ struct AppRulesPanel: View {
                         onSave()
                     }
                 )
-                if i < state.appRules.count - 1 { DSDivider() }
             }
         }
+        .animation(.none, value: state.appRules.count)
         .background(DS.Colors.card)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(DS.Colors.line, lineWidth: 1))

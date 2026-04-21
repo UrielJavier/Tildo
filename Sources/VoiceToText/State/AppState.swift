@@ -72,6 +72,7 @@ final class AppState {
     var ruleEditing: AppRule? = nil
     var toneAddOpen: Bool = false
     var toneEditing: AppTone? = nil
+    var activeToneNameForRecording: String? = nil  // set at recording start, shown in floating pill
 
     /// Resolves the style prompt for a given app + URL.
     /// Precedence: per-app URL rule > per-app rule > default tone > llmStylePrompt (legacy fallback).

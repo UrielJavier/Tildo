@@ -528,6 +528,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         finishTransitionWork?.cancel()
         finishTransitionWork = nil
         guard !appState.isTranscribing, !appState.isProcessing, appState.isModelLoaded else { return }
+        // Capture frontmost app BEFORE any await — this is the moment closest to the hotkey press.
+        let hotkeyFrontmost = NSWorkspace.shared.frontmostApplication
         if appState.isRecording {
             if appState.mode == .live { await stopLiveRecording() }
             else { await stopBatchRecording() }
@@ -539,18 +541,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
             do {
+                let ownPid = ProcessInfo.processInfo.processIdentifier
+                // Prefer AX-captured target; fall back to the app that was frontmost at hotkey time;
+                // last resort: the workspace-tracked previous frontmost app.
+                let fallbackApp = (hotkeyFrontmost?.processIdentifier != ownPid ? hotkeyFrontmost : nil)
+                    ?? previousFrontmostApp
                 recordingTarget = TextSimulator.captureCurrentTarget()
-                    ?? previousFrontmostApp.map { app in
+                    ?? fallbackApp.map { app in
                         RecordingTarget(
                             element: AXUIElementCreateApplication(app.processIdentifier),
                             pid: app.processIdentifier,
                             appName: app.localizedName ?? ""
                         )
                     }
-                fputs("[DEBUG] captureCurrentTarget appName='\(recordingTarget?.appName ?? "nil")' previousFrontmost='\(previousFrontmostApp?.localizedName ?? "nil")'\n", stderr)
-                fputs("[DEBUG] appRules=\(appState.appRules.map { "\($0.appName)(\($0.isEnabled))" })\n", stderr)
-                fputs("[DEBUG] resolveStylePrompt='\(appState.resolveStylePrompt(appName: recordingTarget?.appName ?? "", url: nil))'\n", stderr)
-                recordingTargetURL = nil
+recordingTargetURL = nil
                 if let target = recordingTarget {
                     let appName = target.appName
                     Task { @MainActor in
@@ -616,7 +620,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func resolvedStylePrompt() -> String {
-        appState.resolveStylePrompt(appName: recordingTarget?.appName ?? "", url: recordingTargetURL)
+        let appName = recordingTarget?.appName ?? ""
+        let prompt = appState.resolveStylePrompt(appName: appName, url: recordingTargetURL)
+        // Update the tone name shown in the floating pill to reflect the per-app resolved tone.
+        let resolvedName = appState.appRules
+            .first(where: { $0.isEnabled && $0.appName.lowercased() == appName.lowercased() })
+            .flatMap { rule in appState.tones.first(where: { $0.id == rule.toneId }) }?.name
+            ?? appState.tones.first(where: { $0.id == appState.defaultToneId })?.name
+        appState.activeToneNameForRecording = resolvedName
+        return prompt
     }
 
     private func postProcessIfEnabled(_ text: String, stylePrompt: String) async -> String {
