@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tildo — Voice to text on your Mac. Local. Open source.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0C0B09;
+    --bg2: #161410;
+    --panel: #1C1A14;
+    --line: #2A2720;
+    --lineSoft: #211E17;
+    --text: #F3EEDF;
+    --text2: #C8C1AD;
+    --text3: #8B8571;
+    --text4: #5A5544;
+    --moss: #9FCE6E;
+    --mossDeep: #6C9A3E;
+    --sky: #6FB4E8;
+    --accent: #F2C14E;
+    --rec: #E87560;
+    --sans: "Geist", ui-sans-serif, -apple-system, system-ui, sans-serif;
+    --serif: "Instrument Serif", Georgia, serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--moss); color: #0B0A08; }
+
+  /* ——— NAV ——— */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 48px;
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    backdrop-filter: saturate(150%) blur(18px);
+    -webkit-backdrop-filter: saturate(150%) blur(18px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .2s;
+  }
+  .nav.scrolled { border-bottom-color: var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+  .brand svg { width: 22px; height: 22px; }
+  .nav-links { display: flex; gap: 26px; font-size: 13.5px; color: var(--text2); }
+  .nav-links a:hover { color: var(--text); }
+  .right { display: flex; gap: 10px; align-items: center; }
+  .star-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 11px 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 12.5px; color: var(--text2);
+    font-variant-numeric: tabular-nums;
+    background: rgba(255,255,255,.02);
+  }
+  .star-badge svg { width: 13px; height: 13px; color: var(--accent); }
+  .nav-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px;
+    background: var(--text); color: #0B0A08;
+    font-size: 13px; font-weight: 500;
+  }
+  .nav-cta:hover { background: #fff; }
+
+  /* ——— HERO ——— */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 120px 48px 80px;
+    overflow: hidden;
+    cursor: none;
+  }
+  .hero canvas#field {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+  .hero::before, .hero::after {
+    content: ""; position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none;
+  }
+  .hero::before {
+    top: 0; height: 22%;
+    background: linear-gradient(to bottom, #0C0B09 0%, transparent 100%);
+  }
+  .hero::after {
+    bottom: 0; height: 22%;
+    background: linear-gradient(to top, #0C0B09 0%, transparent 100%);
+  }
+  .hero > .content { position: relative; z-index: 2; max-width: 1280px; margin: 0 auto; width: 100%; pointer-events: none; }
+  .hero > .content * { pointer-events: auto; }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--mono);
+    font-size: 11.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 28px;
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--moss); box-shadow: 0 0 12px rgba(159,206,110,.7); animation: throb 2s ease-in-out infinite; }
+  @keyframes throb { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+  .h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(56px, 10vw, 148px);
+    line-height: 0.94;
+    letter-spacing: -0.028em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .h1 .em { font-style: italic; color: var(--moss); }
+  .h1 .stroke { color: transparent; -webkit-text-stroke: 1.2px var(--text3); font-style: italic; }
+
+  .sub {
+    max-width: 580px;
+    margin: 32px 0 0;
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--text2);
+  }
+
+  .cta-row { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 14px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 20px;
+    border-radius: 14px;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform .08s, background .15s, border-color .15s, box-shadow .25s;
+    border: 1px solid transparent;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--moss); color: #0B0A08; }
+  .btn-primary:hover { background: #B5DC86; box-shadow: 0 0 0 6px rgba(159,206,110,.18); }
+  .btn-primary .kbd { font-family: var(--mono); font-size: 11.5px; padding: 2px 6px; border-radius: 5px; background: rgba(11,10,8,.16); color: rgba(11,10,8,.72); }
+  .btn-secondary { background: rgba(12,11,9,.5); backdrop-filter: blur(6px); color: var(--text); border-color: var(--line); }
+  .btn-secondary:hover { border-color: var(--text3); background: rgba(12,11,9,.7); }
+  .btn .arrow { opacity: .55; }
+
+  .meta-row {
+    margin-top: 28px;
+    display: flex; flex-wrap: wrap; gap: 18px 28px;
+    font-size: 13px; color: var(--text3);
+    font-family: var(--mono);
+  }
+  .meta-row span { display: inline-flex; align-items: center; gap: 8px; }
+  .meta-row .mdot { width: 3px; height: 3px; border-radius: 50%; background: var(--text4); }
+
+  .magnet-hint {
+    position: absolute;
+    bottom: 32px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text3);
+    display: flex; align-items: center; gap: 12px;
+    z-index: 3;
+    opacity: 0; animation: fadeIn 1s .8s forwards;
+  }
+  @keyframes fadeIn { to { opacity: 1; } }
+  .magnet-hint .line { width: 28px; height: 1px; background: var(--text4); }
+
+  .cursor-magnet {
+    position: fixed;
+    pointer-events: none;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(159,206,110,.5);
+    transform: translate(-50%, -50%);
+    z-index: 70;
+    transition: width .2s ease, height .2s ease, opacity .2s;
+    mix-blend-mode: screen;
+  }
+  .cursor-magnet::before {
+    content: "";
+    position: absolute; inset: 8px;
+    border-radius: 50%;
+    background: var(--moss);
+    box-shadow: 0 0 20px rgba(159,206,110,.6);
+  }
+  .cursor-magnet::after {
+    content: "";
+    position: absolute; inset: -12px;
+    border-radius: 50%;
+    border: 1px solid rgba(159,206,110,.12);
+  }
+  body.outside-hero .cursor-magnet { opacity: 0; }
+
+  /* ——— Section base ——— */
+  section { position: relative; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 48px; }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text3);
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 28px;
+  }
+  .section-label::before { content: ""; width: 22px; height: 1px; background: var(--text4); }
+  .section-title {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(40px, 5.5vw, 64px);
+    line-height: 1; letter-spacing: -0.022em;
+    margin: 0 0 22px; text-wrap: balance;
+  }
+  .section-title em { font-style: italic; color: var(--moss); }
+  .section-sub { font-size: 18px; color: var(--text2); max-width: 600px; line-height: 1.5; margin: 0; }
+
+  /* ——— Demo ——— */
+  .demo { padding-top: 100px; padding-bottom: 140px; }
+  .demo-canvas {
+    margin-top: 52px; position: relative;
+    background: var(--bg2); border: 1px solid var(--line); border-radius: 20px;
+    padding: 48px 56px 52px; min-height: 420px;
+  }
+  .demo-tabs {
+    position: absolute; top: -14px; left: 36px;
+    display: flex; gap: 6px;
+    background: var(--bg);
+    padding: 4px; border: 1px solid var(--line); border-radius: 10px;
+  }
+  .demo-tabs button {
+    font-family: inherit; font-size: 12px; font-weight: 500;
+    padding: 7px 12px; border-radius: 7px;
+    background: transparent; color: var(--text3);
+    border: 0; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .demo-tabs button:hover { color: var(--text); }
+  .demo-tabs button.active { background: var(--moss); color: #0B0A08; }
+  .demo-app-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--lineSoft);
+    margin-bottom: 28px;
+    font-family: var(--mono); font-size: 11.5px; color: var(--text3);
+  }
+  .demo-app-bar .dots { display: flex; gap: 6px; margin-right: 6px; }
+  .demo-app-bar .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .demo-app-bar .dots i:nth-child(1) { background: var(--rec); }
+  .demo-app-bar .dots i:nth-child(2) { background: var(--accent); }
+  .demo-app-bar .dots i:nth-child(3) { background: var(--moss); }
+  .demo-body { font-size: 20px; line-height: 1.5; min-height: 260px; }
+  .demo-body .tag { display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+  .demo-body .tag .kbd-inline { border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+  .demo-body .block { margin-bottom: 22px; }
+  .demo-body .raw { color: var(--text3); }
+  .demo-body .cleaned { color: var(--text); }
+  .demo-body .caret { display: inline-block; width: 2px; height: 1.05em; background: var(--moss); margin-left: 2px; vertical-align: -0.15em; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .demo-legend { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 20px; font-family: var(--mono); font-size: 11.5px; color: var(--text3); }
+  .demo-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 8px; vertical-align: -1px; background: var(--text3); }
+  .demo-legend .sw.moss { background: var(--moss); }
+
+  /* ——— Steps ——— */
+  .steps { padding-top: 120px; padding-bottom: 140px; border-top: 1px solid var(--line); }
+  .step-grid { margin-top: 72px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  .step { padding: 0 40px 0 40px; border-right: 1px solid var(--line); }
+  .step:first-child { padding-left: 0; }
+  .step:last-child { border-right: 0; padding-right: 0; }
+  .step-num { font-family: var(--mono); font-size: 11px; color: var(--moss); letter-spacing: 0.12em; margin-bottom: 24px; }
+  .step-title { font-family: var(--serif); font-size: 28px; letter-spacing: -0.01em; margin: 0 0 14px; line-height: 1.1; }
+  .step-title em { font-style: italic; color: var(--moss); }
+  .step-body { font-size: 15px; color: var(--text3); line-height: 1.65; max-width: 26ch; }
+
+  /* ——— Tones ——— */
+  .tones { padding-top: 120px; padding-bottom: 120px; border-top: 1px solid var(--line); }
+  .tones-grid { margin-top: 52px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: start; }
+  .tone-source {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 22px 24px; font-size: 16px; color: var(--text2); line-height: 1.55; position: relative;
+  }
+  .tone-source::before {
+    content: "Raw transcript"; position: absolute; top: -10px; left: 16px;
+    background: var(--bg); padding: 0 8px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text3);
+  }
+  .tone-list { display: flex; flex-direction: column; gap: 12px; }
+  .tone {
+    display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 18px;
+    padding: 18px 20px; background: var(--bg2); border: 1px solid var(--line); border-radius: 12px;
+    cursor: pointer; transition: border-color .15s, background .15s;
+  }
+  .tone:hover { border-color: var(--text3); }
+  .tone.active { border-color: var(--moss); background: linear-gradient(180deg, rgba(159,206,110,.06), transparent); box-shadow: 0 0 0 3px rgba(159,206,110,.1); }
+  .tone-name b { display: block; font-weight: 500; font-size: 14px; color: var(--text); }
+  .tone-name span { font-family: var(--mono); font-size: 10.5px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; }
+  .tone-preview { font-size: 14.5px; color: var(--text2); line-height: 1.5; }
+  .tone-chip { font-family: var(--mono); font-size: 11px; color: var(--text3); padding: 3px 7px; border: 1px solid var(--line); border-radius: 5px; }
+
+  .llm-row { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 13.5px; color: var(--text3); }
+  .llm-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; font-family: var(--mono); font-size: 12px; color: var(--text2); }
+  .llm-chip svg { width: 14px; height: 14px; }
+
+  /* ——— Models ——— */
+  .models { padding-top: 120px; padding-bottom: 120px; border-top: 1px solid var(--line); }
+  .models-table { margin-top: 52px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg2); }
+  .models-row {
+    display: grid; grid-template-columns: 110px 1fr 110px 120px 120px;
+    align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--lineSoft); font-size: 14px;
+  }
+  .models-row:last-child { border-bottom: 0; }
+  .models-row.head { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); background: var(--panel); padding: 12px 24px; }
+  .models-name { font-weight: 500; color: var(--text); }
+  .models-name.recommended::after {
+    content: "recommended"; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #0B0A08; background: var(--moss); padding: 2px 7px; border-radius: 4px; margin-left: 10px; font-weight: 500;
+  }
+  .models-desc { color: var(--text3); font-size: 13.5px; }
+  .models-num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text2); font-size: 13px; }
+  .models-bar { display: flex; align-items: center; gap: 10px; }
+  .models-bar .track { height: 4px; width: 80px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .models-bar .fill { height: 100%; background: var(--moss); border-radius: 2px; }
+
+  /* ——— Privacy ——— */
+  .privacy { padding-top: 140px; padding-bottom: 140px; border-top: 1px solid var(--line); }
+  .privacy-grid { margin-top: 52px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+  .privacy-list { display: flex; flex-direction: column; gap: 24px; }
+  .privacy-item { display: flex; gap: 18px; align-items: flex-start; }
+  .privacy-item .check { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: rgba(159,206,110,.14); color: var(--moss); display: grid; place-items: center; margin-top: 2px; }
+  .privacy-item .check svg { width: 12px; height: 12px; }
+  .privacy-item b { display: block; font-weight: 500; font-size: 16px; margin-bottom: 4px; color: var(--text); }
+  .privacy-item span { color: var(--text3); font-size: 14.5px; line-height: 1.55; }
+
+  .network-diagram { background: var(--panel); border-radius: 16px; border: 1px solid var(--line); padding: 32px; display: flex; flex-direction: column; gap: 0; justify-content: flex-start; }
+  .nd-zone-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 14px; }
+  .nd-zone-label.local { color: var(--moss); }
+  .nd-zone-label.internet { color: var(--text4); }
+  .nd-local { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; display: flex; align-items: flex-start; gap: 0; }
+  .nd-node { display: flex; flex-direction: column; gap: 3px; flex: 1; text-align: center; }
+  .nd-node b { font-size: 13.5px; font-weight: 500; color: var(--text); }
+  .nd-node span { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .nd-node.highlight b { color: var(--moss); }
+  .nd-arrow { flex-shrink: 0; color: var(--moss); display: flex; align-items: flex-start; padding: 0 16px; padding-top: 2px; }
+  .nd-arrow svg { width: 18px; height: 18px; }
+  .nd-divider { display: flex; align-items: center; gap: 14px; padding: 20px 0; }
+  .nd-divider::before, .nd-divider::after { content: ""; flex: 1; height: 1px; border-top: 1px dashed var(--line); }
+  .nd-divider span { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text4); white-space: nowrap; }
+  .nd-internet { border: 1px dashed var(--line); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; gap: 0; opacity: .5; }
+  .nd-opt-badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text4); border: 1px solid var(--line); border-radius: 4px; padding: 2px 7px; margin-top: 5px; width: fit-content; }
+
+  /* ——— Closer ——— */
+  .closer { padding-top: 140px; padding-bottom: 120px; border-top: 1px solid var(--line); overflow: hidden; position: relative; }
+  .closer::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(800px 300px at 50% 0%, rgba(159,206,110,.10), transparent 70%);
+    pointer-events: none;
+  }
+  .closer-inner { display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: end; position: relative; }
+  .closer h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(56px, 8vw, 104px); line-height: 0.95; letter-spacing: -0.028em; margin: 0; text-wrap: balance; }
+  .closer h2 em { font-style: italic; color: var(--moss); }
+
+  /* ——— Footer ——— */
+  footer { border-top: 1px solid var(--line); padding: 48px 48px 36px; font-size: 13px; color: var(--text3); }
+  footer .row { display: flex; justify-content: space-between; align-items: center; max-width: 1280px; margin: 0 auto; }
+  footer .links { display: flex; gap: 24px; }
+  footer .links a { color: var(--text3); }
+  footer .links a:hover { color: var(--text); }
+  footer .made { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; color: var(--text4); }
+
+  /* ————————————————————————————————————— Responsive */
+
+  @media (max-width: 880px) {
+    /* nav */
+    .nav { padding: 14px 28px; }
+    .nav-links { display: none; }
+
+    /* hero */
+    .hero { cursor: default; padding: 120px 28px 80px; }
+    .cursor-magnet { display: none; }
+    .magnet-hint { display: none; }
+
+    /* layout */
+    .wrap { padding: 0 28px; }
+
+    /* section spacing */
+    .demo  { padding-top: 80px; padding-bottom: 100px; }
+    .steps { padding-top: 80px; padding-bottom: 100px; }
+    .tones { padding-top: 80px; padding-bottom: 80px; }
+    .models { padding-top: 80px; padding-bottom: 80px; }
+    .privacy { padding-top: 80px; padding-bottom: 100px; }
+    .closer { padding-top: 80px; padding-bottom: 80px; }
+
+    /* demo */
+    .demo-canvas { padding: 32px 22px 36px; min-height: auto; }
+    .demo-tabs { left: 22px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+                 max-width: calc(100% - 22px); scrollbar-width: none; }
+    .demo-tabs::-webkit-scrollbar { display: none; }
+    .demo-tabs button { white-space: nowrap; }
+    .demo-body { font-size: 18px; min-height: auto; }
+
+    /* steps — 2 col */
+    .step-grid { margin-top: 36px; grid-template-columns: 1fr 1fr; gap: 0; }
+    .step { border-right: 0; border-bottom: 1px solid var(--line); padding: 28px 0; }
+    .step:nth-child(even) { padding-left: 32px; border-left: 1px solid var(--line); }
+    .step:nth-last-child(-n+2) { border-bottom: 0; }
+    .step-body { max-width: none; }
+
+    /* tones */
+    .tones-grid { grid-template-columns: 1fr; gap: 24px; }
+
+    /* models */
+    .models-row { grid-template-columns: 1fr; gap: 4px; padding: 16px 20px; }
+    .models-row.head { display: none; }
+    .models-bar { display: none; }
+
+    /* privacy */
+    .privacy-grid { grid-template-columns: 1fr; gap: 40px; }
+
+    /* closer */
+    .closer-inner { grid-template-columns: 1fr; gap: 28px; }
+    .closer-inner .cta-row { margin-top: 0; }
+
+    /* footer */
+    footer .row { flex-direction: column; gap: 16px; align-items: flex-start; }
+  }
+
+  @media (max-width: 520px) {
+    /* nav */
+    .star-badge { display: none; }
+    .nav { padding: 14px 20px; }
+    .nav-cta { padding: 7px 12px; font-size: 12.5px; }
+
+    /* hero */
+    .hero { padding: 96px 20px 64px; }
+    .h1 { font-size: clamp(40px, 12vw, 56px); }
+    .sub { font-size: 16px; margin-top: 22px; max-width: none; }
+    .cta-row { margin-top: 26px; gap: 10px; }
+    .btn { padding: 12px 16px; font-size: 14px; gap: 8px; border-radius: 12px; }
+    .meta-row { margin-top: 20px; font-size: 12px; gap: 10px 16px; }
+
+    /* layout */
+    .wrap { padding: 0 20px; }
+    .section-label { margin-bottom: 20px; }
+    .section-title { font-size: clamp(30px, 9vw, 42px); margin-bottom: 16px; }
+    .section-sub { font-size: 16px; }
+
+    /* section spacing */
+    .demo, .steps, .tones, .models, .privacy, .closer { padding-top: 64px; padding-bottom: 64px; }
+
+    /* section content margin-tops */
+    .demo-canvas, .tones-grid, .models-table, .privacy-grid { margin-top: 32px; }
+
+    /* demo */
+    .demo-canvas { padding: 26px 16px 26px; }
+    .demo-tabs { left: 16px; top: -12px; }
+    .demo-body { font-size: 16px; }
+    .demo-legend { gap: 12px; font-size: 11px; }
+
+    /* steps — 1 col */
+    .step-grid { grid-template-columns: 1fr; margin-top: 24px; }
+    .step { border-left: 0 !important; border-right: 0 !important;
+            border-bottom: 1px solid var(--line); padding: 24px 0 !important; }
+    .step:last-child { border-bottom: 0; }
+    .step-title { font-size: 24px; }
+    .step-num { margin-bottom: 16px; }
+
+    /* tones — restack tone card */
+    .tone { grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 8px 10px; }
+    .tone-name { grid-column: 1; grid-row: 1; }
+    .tone-chip { grid-column: 2; grid-row: 1; align-self: start; }
+    .tone-preview { grid-column: 1 / -1; grid-row: 2; }
+
+    /* network diagram — stack vertically */
+    .nd-local { flex-direction: column; align-items: center; gap: 0; }
+    .nd-arrow { padding: 6px 0; }
+    .nd-arrow svg { transform: rotate(90deg); }
+    .nd-node { flex: none; width: 100%; }
+
+    /* closer */
+    .closer h2 { font-size: clamp(38px, 10.5vw, 56px); }
+
+    /* footer */
+    footer { padding: 36px 20px 28px; }
+    footer .row { align-items: center; }
+    footer .links { justify-content: center; flex-wrap: wrap; gap: 12px 20px; }
+    footer .made { text-align: center; }
+  }
+</style>
+</head>
+<body class="outside-hero">
+
+  <div class="cursor-magnet" id="cursor"></div>
+
+  <nav class="nav" id="nav">
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 14c2.5-3 4.5-3 7 0s4.5 3 7 0c1.4-1.7 2.3-2.3 3-2" stroke="#9FCE6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Tildo
+    </a>
+    <div class="nav-links">
+      <a href="#demo">Demo</a>
+      <a href="#how">How</a>
+      <a href="#tones">Tones</a>
+      <a href="#privacy">Privacy</a>
+      <a href="https://github.com/UrielJavier/Tildo" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="right">
+      <a class="star-badge" href="https://github.com/UrielJavier/Tildo" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25l2.163 4.948L15.5 5.94l-3.97 3.612.98 5.198L8 12.164 3.49 14.75l.98-5.198L.5 5.94l5.337-.742L8 .25z"/></svg>
+        <span id="star-count">—</span>
+      </a>
+      <a class="nav-cta" href="https://github.com/UrielJavier/Tildo/releases/latest" target="_blank" rel="noopener">Download</a>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <canvas id="field"></canvas>
+
+    <div class="content">
+      <div class="eyebrow">
+        <span class="dot"></span>
+        <span>macOS · Apple Silicon &amp; Intel · open source</span>
+      </div>
+
+      <h1 class="h1">
+        Talk to your <span class="em">Mac.</span><br>
+        <span class="stroke">It writes</span> back.
+      </h1>
+
+      <p class="sub">
+        Hold <b>fn</b>, talk, release. Tildo writes what you said into whatever app you were using. Whisper runs on your Mac. No account. No cloud. No tracking.
+      </p>
+
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/UrielJavier/Tildo/releases/latest" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v14m0 0l-5-5m5 5l5-5M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download Tildo
+          <span class="kbd" id="version-badge">v1.4.1 · free</span>
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/UrielJavier/Tildo" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.09 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.1c-3.19.69-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.33.95.1-.74.4-1.24.72-1.53-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.17a10.97 10.97 0 012.87-.39c.97 0 1.95.13 2.87.39 2.19-1.48 3.15-1.17 3.15-1.17.62 1.58.23 2.75.11 3.04.73.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.37-5.24 5.66.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.55A10.51 10.51 0 0023.5 12C23.5 5.73 18.27.5 12 .5z"/></svg>
+          GitHub
+          <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H8M17 7v9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <div class="meta-row">
+        <span>macOS 13+</span><span class="mdot"></span>
+        <span>Apple Silicon &amp; Intel</span><span class="mdot"></span>
+        <span>MIT licensed</span><span class="mdot"></span>
+        <span>99 languages</span>
+      </div>
+    </div>
+
+    <div class="magnet-hint"><span class="line"></span>move your cursor through the field<span class="line"></span></div>
+  </header>
+
+  <!-- ——— Demo ——— -->
+  <section class="demo wrap" id="demo">
+    <div class="section-label">01 · See it</div>
+    <h2 class="section-title">Press <em>fn</em>, talk, release.</h2>
+    <p class="section-sub">A pill appears while you speak. When you let go, the transcript lands in the app you were using — cleaned up if you have a tone enabled.</p>
+
+    <div class="demo-canvas">
+      <div class="demo-tabs" role="tablist">
+        <button class="active" data-tab="mail">Mail draft</button>
+        <button data-tab="slack">Slack</button>
+        <button data-tab="notes">Notes</button>
+        <button data-tab="code">Code comment</button>
+      </div>
+      <div class="demo-app-bar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <span id="demo-app-name">New Message · To: team@tildo.app</span>
+      </div>
+      <div class="demo-body" id="demo-body">
+        <div class="block">
+          <div class="tag">you said <span class="kbd-inline">fn</span></div>
+          <div class="raw" id="demo-raw">hey team quick heads up the feature branch is finally green so we can probably merge tomorrow morning if nothing blows up overnight</div>
+        </div>
+        <div class="block">
+          <div class="tag" style="color:var(--moss)">Tildo wrote</div>
+          <div class="cleaned" id="demo-cleaned">Hi team,<br><br>Quick heads-up — the feature branch is finally green. Assuming nothing breaks overnight, we should be able to merge tomorrow morning.<br><br>— Rodrigo</div>
+        </div>
+      </div>
+      <div class="demo-legend">
+        <span><span class="sw"></span>what you said</span>
+        <span><span class="sw moss"></span>what Tildo wrote</span>
+        <span id="active-tone-legend">tone: <b style="color:var(--text);font-weight:500">Professional</b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ——— Steps ——— -->
+  <section class="steps wrap" id="how">
+    <div class="section-label">02 · How it works</div>
+    <h2 class="section-title">Four things, in order.</h2>
+    <p class="section-sub">No magic. Just a pipeline that runs on your machine.</p>
+    <div class="step-grid">
+      <div class="step"><div class="step-num">01</div><h3 class="step-title">Hold <em>fn</em></h3><p class="step-body">A small pill shows up in the corner. Doesn't steal focus, doesn't interrupt.</p></div>
+      <div class="step"><div class="step-num">02</div><h3 class="step-title">Speak</h3><p class="step-body">Audio captured locally. Whisper.cpp on your Mac — faster than real-time on Apple Silicon.</p></div>
+      <div class="step"><div class="step-num">03</div><h3 class="step-title">Release</h3><p class="step-body">Transcription finishes. If a tone is on, an LLM rewrites the raw text to match.</p></div>
+      <div class="step"><div class="step-num">04</div><h3 class="step-title">Paste</h3><p class="step-body">Result lands in whatever app you were using. Mail, Slack, Xcode, Notion, the terminal.</p></div>
+    </div>
+  </section>
+
+  <!-- ——— Tones ——— */
+  <section class="tones wrap" id="tones">
+    <div class="section-label">03 · Tones &amp; LLM</div>
+    <h2 class="section-title">Rewrite what you said, <em>your way</em>.</h2>
+    <p class="section-sub">Four tones ship by default. Write your own. The LLM is optional — when off, Tildo just pastes the raw transcript.</p>
+    <div class="tones-grid">
+      <div class="tone-source">so uh yeah i think we should probably push the launch to next week because the api thing isn't ready and i don't want to ship something broken</div>
+      <div class="tone-list">
+        <div class="tone active" data-tone="professional">
+          <div class="tone-name"><b>Professional</b><span>built-in</span></div>
+          <div class="tone-preview">I'd suggest pushing the launch to next week. The API isn't ready and I'd rather not ship something broken.</div>
+          <div class="tone-chip">Claude</div>
+        </div>
+        <div class="tone" data-tone="casual">
+          <div class="tone-name"><b>Casual</b><span>built-in</span></div>
+          <div class="tone-preview">Think we should push launch to next week — API's not ready and I don't want to ship something broken.</div>
+          <div class="tone-chip">Claude</div>
+        </div>
+        <div class="tone" data-tone="notes">
+          <div class="tone-name"><b>Bullet notes</b><span>built-in</span></div>
+          <div class="tone-preview">• Push launch to next week<br>• API isn't ready<br>• Avoid shipping broken</div>
+          <div class="tone-chip">Claude</div>
+        </div>
+        <div class="tone" data-tone="raw">
+          <div class="tone-name"><b>Raw</b><span>no LLM</span></div>
+          <div class="tone-preview">so uh yeah i think we should probably push the launch to next week because the api thing isn't ready and i don't want to ship something broken</div>
+          <div class="tone-chip">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="llm-row">
+      <span>Plug in your own key:</span>
+      <span class="llm-chip">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
+        Anthropic
+      </span>
+      <span class="llm-chip">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l9 5-9 5-9-5 9-5zm0 10l9-5v8l-9 5-9-5V8l9 5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        OpenAI
+      </span>
+      <span class="llm-chip">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h10M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Claude Code CLI
+      </span>
+      <span style="font-family:var(--mono);font-size:11.5px;color:var(--text4);margin-left:6px">keys stored in Keychain</span>
+    </div>
+  </section>
+
+  <!-- ——— Models ——— -->
+  <section class="models wrap">
+    <div class="section-label">04 · Whisper models</div>
+    <h2 class="section-title">Pick a size. <em>Download once.</em></h2>
+    <p class="section-sub">All Whisper models run locally. Bigger is more accurate, smaller is faster.</p>
+    <div class="models-table">
+      <div class="models-row head"><div>Model</div><div>What it's good for</div><div>Size</div><div>Speed</div><div>Accuracy</div></div>
+      <div class="models-row"><div class="models-name">Tiny</div><div class="models-desc">Quick notes, single-language, low-power Macs</div><div class="models-num">39 MB</div><div class="models-bar"><div class="track"><div class="fill" style="width:95%"></div></div></div><div class="models-bar"><div class="track"><div class="fill" style="width:35%"></div></div></div></div>
+      <div class="models-row"><div class="models-name">Base</div><div class="models-desc">Balanced default. Great on any modern Mac.</div><div class="models-num">142 MB</div><div class="models-bar"><div class="track"><div class="fill" style="width:85%"></div></div></div><div class="models-bar"><div class="track"><div class="fill" style="width:55%"></div></div></div></div>
+      <div class="models-row"><div class="models-name">Small</div><div class="models-desc">Solid accuracy for mixed-language dictation</div><div class="models-num">465 MB</div><div class="models-bar"><div class="track"><div class="fill" style="width:70%"></div></div></div><div class="models-bar"><div class="track"><div class="fill" style="width:72%"></div></div></div></div>
+      <div class="models-row"><div class="models-name">Medium</div><div class="models-desc">Long-form dictation, technical terms, multilingual</div><div class="models-num">1.5 GB</div><div class="models-bar"><div class="track"><div class="fill" style="width:55%"></div></div></div><div class="models-bar"><div class="track"><div class="fill" style="width:88%"></div></div></div></div>
+      <div class="models-row"><div class="models-name">Large-v3</div><div class="models-desc">Best accuracy. Heavy. For M2 Pro and up.</div><div class="models-num">2.9 GB</div><div class="models-bar"><div class="track"><div class="fill" style="width:38%"></div></div></div><div class="models-bar"><div class="track"><div class="fill" style="width:98%"></div></div></div></div>
+    </div>
+  </section>
+
+  <!-- ——— Privacy ——— -->
+  <section class="privacy wrap" id="privacy">
+    <div class="section-label">05 · Privacy</div>
+    <h2 class="section-title">Yours stays <em>yours</em>.</h2>
+    <p class="section-sub">Tildo is built so the default case — you talking to your Mac — never touches a server.</p>
+    <div class="privacy-grid">
+      <div class="privacy-list">
+        <div class="privacy-item"><span class="check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>No account, no sign-in</b><span>Install and use. Nothing to log into. No email, no password, no ID.</span></div></div>
+        <div class="privacy-item"><span class="check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>No analytics, no telemetry</b><span>Tildo doesn't phone home. No events, no crash pings, no usage counters. The code is on GitHub — check.</span></div></div>
+        <div class="privacy-item"><span class="check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Your voice never leaves the Mac</b><span>Whisper runs locally. Audio is processed in memory and dropped. Nothing saved unless you ask.</span></div></div>
+        <div class="privacy-item"><span class="check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>LLM is opt-in and yours</b><span>If you turn on a tone, Tildo uses the provider whose key you configured. Off by default. Your key, your account.</span></div></div>
+        <div class="privacy-item"><span class="check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Open source, MIT</b><span>Every line is auditable. Fork it. Package it. We don't know, because we can't.</span></div></div>
+      </div>
+      <div class="network-diagram">
+        <div class="nd-zone-label local">On your Mac</div>
+        <div class="nd-local">
+          <div class="nd-node">
+            <b>Microphone</b>
+            <span>audio input</span>
+          </div>
+          <div class="nd-arrow">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="nd-node highlight">
+            <b>Whisper.cpp</b>
+            <span>local transcription</span>
+          </div>
+          <div class="nd-arrow">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="nd-node">
+            <b>Tildo</b>
+            <span>pastes into your app</span>
+          </div>
+        </div>
+
+        <div class="nd-divider"><span>internet boundary</span></div>
+
+        <div class="nd-zone-label internet">Optional — off by default</div>
+        <div class="nd-internet">
+          <div class="nd-node">
+            <b>Anthropic / OpenAI</b>
+            <span>only transcribed text · never audio</span>
+            <span class="nd-opt-badge">opt-in · your key</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ——— Closer ——— -->
+  <section class="closer wrap" id="download">
+    <div class="closer-inner">
+      <h2>Less typing. <em>More thinking.</em></h2>
+      <div class="cta-row" style="margin-top:0">
+        <a class="btn btn-primary" href="https://github.com/UrielJavier/Tildo/releases/latest" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v14m0 0l-5-5m5 5l5-5M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download Tildo
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/UrielJavier/Tildo/releases" target="_blank" rel="noopener">GitHub Releases</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="row">
+      <span class="made">∼ Tildo · MIT · <span id="footer-version">v1.4.1</span></span>
+      <div class="links">
+        <a href="https://github.com/UrielJavier/Tildo" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/UrielJavier/Tildo/releases" target="_blank" rel="noopener">Changelog</a>
+        <a href="#privacy">Privacy</a>
+      </div>
+    </div>
+  </footer>
+
+<script>
+  // nav scroll
+  (() => {
+    const n = document.getElementById('nav');
+    const f = () => n.classList.toggle('scrolled', scrollY > 12);
+    f(); addEventListener('scroll', f, {passive:true});
+  })();
+
+  // GitHub API: star count + latest release version
+  (() => {
+    const REPO = 'UrielJavier/Tildo';
+    const starEl = document.getElementById('star-count');
+    const badgeEl = document.getElementById('version-badge');
+    const footerEl = document.getElementById('footer-version');
+
+    fetch(`https://api.github.com/repos/${REPO}`)
+      .then(r => r.json())
+      .then(d => { if (d.stargazers_count != null) starEl.textContent = d.stargazers_count.toLocaleString(); })
+      .catch(() => { starEl.textContent = '★'; });
+
+    fetch(`https://api.github.com/repos/${REPO}/releases/latest`)
+      .then(r => r.json())
+      .then(d => {
+        if (!d.tag_name) return;
+        const v = d.tag_name.replace(/^v/, '');
+        if (badgeEl) badgeEl.textContent = `v${v} · free`;
+        if (footerEl) footerEl.textContent = `v${v}`;
+        // update all download hrefs to point to this release
+        const url = `https://github.com/${REPO}/releases/tag/${d.tag_name}`;
+        document.querySelectorAll('a[href*="/releases/latest"]').forEach(a => {
+          a.href = url;
+        });
+      })
+      .catch(() => {});
+  })();
+
+  // cursor magnet
+  (() => {
+    const c = document.getElementById('cursor');
+    const hero = document.getElementById('top');
+    let x = innerWidth/2, y = innerHeight/2, tx = x, ty = y;
+    addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; });
+    addEventListener('pointerdown', () => { c.style.transform = 'translate(-50%, -50%) scale(1.4)'; });
+    addEventListener('pointerup',   () => { c.style.transform = 'translate(-50%, -50%) scale(1)'; });
+    hero.addEventListener('pointerenter', () => document.body.classList.remove('outside-hero'));
+    hero.addEventListener('pointerleave', () => document.body.classList.add('outside-hero'));
+    (function raf() {
+      x += (tx - x) * 0.25; y += (ty - y) * 0.25;
+      c.style.left = x + 'px'; c.style.top = y + 'px';
+      requestAnimationFrame(raf);
+    })();
+  })();
+
+  // magnet field canvas
+  (() => {
+    const canvas = document.getElementById('field');
+    const ctx = canvas.getContext('2d');
+    const hero = document.getElementById('top');
+    let w = 0, h = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resize() {
+      const r = hero.getBoundingClientRect();
+      w = r.width; h = r.height;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize(); addEventListener('resize', resize);
+
+    let px = -9999, py = -9999, targetPx = -9999, targetPy = -9999;
+    let pActive = 0, targetActive = 0;
+    hero.addEventListener('pointerenter', () => { targetActive = 1; });
+    hero.addEventListener('pointerleave', () => { targetActive = 0; });
+    hero.addEventListener('pointermove', (e) => {
+      const r = hero.getBoundingClientRect();
+      targetPx = e.clientX - r.left; targetPy = e.clientY - r.top;
+    });
+    const pulses = [];
+    hero.addEventListener('pointerdown', (e) => {
+      const r = hero.getBoundingClientRect();
+      pulses.push({ x: e.clientX - r.left, y: e.clientY - r.top, t: 0 });
+    });
+
+    const ROWS = 44, STEP = 8, REPEL = 160, STRENGTH = 90;
+    let t = 0;
+    function tick() {
+      t += 1/60;
+      pActive += (targetActive - pActive) * 0.08;
+      if (pActive > 0.01) {
+        px += (targetPx - px) * 0.22;
+        py += (targetPy - py) * 0.22;
+      }
+      ctx.clearRect(0, 0, w, h);
+
+      if (pActive > 0.05) {
+        const g = ctx.createRadialGradient(px, py, 0, px, py, 260);
+        g.addColorStop(0, `rgba(159,206,110,${0.16 * pActive})`);
+        g.addColorStop(0.5, `rgba(159,206,110,${0.05 * pActive})`);
+        g.addColorStop(1, 'rgba(159,206,110,0)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      }
+
+      for (const p of pulses) p.t += 1/60;
+      for (let i = pulses.length - 1; i >= 0; i--) if (pulses[i].t > 1.5) pulses.splice(i, 1);
+
+      const rowGap = h / (ROWS + 1);
+      for (let r = 0; r < ROWS; r++) {
+        const yBase = rowGap * (r + 1);
+        const centerDist = Math.abs(r - ROWS/2) / (ROWS/2);
+        const alpha = 0.08 + (1 - centerDist) * 0.22;
+        ctx.beginPath();
+        for (let x = 0; x <= w; x += STEP) {
+          const ambient = Math.sin(x * 0.007 + t * 0.55 + r * 0.28) * 7
+                        + Math.sin(x * 0.013 - t * 0.38 + r * 0.18) * 4
+                        + Math.sin(x * 0.003 + t * 0.22 - r * 0.12) * 5;
+          let dy = 0;
+          if (pActive > 0.02) {
+            const dx = x - px, dyRaw = yBase - py;
+            const dist2 = dx*dx + dyRaw*dyRaw;
+            const falloff = Math.exp(-dist2 / (REPEL * REPEL * 2.2));
+            dy -= STRENGTH * 1.4 * falloff * pActive;
+          }
+          for (const pulse of pulses) {
+            const pdx = x - pulse.x, pdyRaw = yBase - pulse.y;
+            const pdist = Math.sqrt(pdx*pdx + pdyRaw*pdyRaw);
+            const wave = Math.sin(pdist * 0.06 - pulse.t * 12);
+            const pulseFade = Math.max(0, 1 - pulse.t / 1.5);
+            const pulseFalloff = Math.exp(-Math.pow(pdist - pulse.t * 280, 2) / 6000);
+            dy += wave * 26 * pulseFade * pulseFalloff * (pdyRaw >= 0 ? 1 : -1);
+          }
+          const y = yBase + ambient + dy;
+          if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        const grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, `rgba(159,206,110,${alpha * 0.2})`);
+        grad.addColorStop(0.5, `rgba(159,206,110,${alpha})`);
+        grad.addColorStop(1, `rgba(111,180,232,${alpha * 0.6})`);
+        ctx.strokeStyle = grad; ctx.lineWidth = 1; ctx.stroke();
+      }
+      requestAnimationFrame(tick);
+    }
+    tick();
+  })();
+
+  // demo — static tabs
+  (() => {
+    const scenarios = {
+      mail:  { appName: "New Message · To: team@tildo.app", tone: "Professional",
+               raw: "hey team quick heads up the feature branch is finally green so we can probably merge tomorrow morning if nothing blows up overnight",
+               cleaned: "Hi team,<br><br>Quick heads-up — the feature branch is finally green. Assuming nothing breaks overnight, we should be able to merge tomorrow morning.<br><br>— Rodrigo" },
+      slack: { appName: "#design-review · Slack", tone: "Casual",
+               raw: "ok so i looked at the new onboarding and honestly i think the second screen needs less copy it's doing too much",
+               cleaned: "Looked at the new onboarding — second screen needs less copy, it's doing too much. 👀" },
+      notes: { appName: "Daily Notes · 19 Apr", tone: "Bullet notes",
+               raw: "today ship tildo landing talk to marco about the dmg signing figure out the github releases thing and also buy milk",
+               cleaned: "Today<br>• Ship Tildo landing<br>• Talk to Marco about DMG signing<br>• Figure out GitHub Releases<br>• Buy milk" },
+      code:  { appName: "AppState.swift · Xcode", tone: "Code comment",
+               raw: "this handles the case where whisper isn't downloaded yet and we need to surface the onboarding again without losing any pending audio buffer",
+               cleaned: "// Handles the case where Whisper isn't downloaded yet — surfaces onboarding<br>// again without losing any pending audio buffer." }
+    };
+
+    const appName = document.getElementById('demo-app-name');
+    const rawEl   = document.getElementById('demo-raw');
+    const cleanEl = document.getElementById('demo-cleaned');
+    const legend  = document.getElementById('active-tone-legend');
+    const tabs    = document.querySelectorAll('.demo-tabs button');
+
+    function selectTab(key) {
+      const s = scenarios[key];
+      tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === key));
+      appName.textContent = s.appName;
+      rawEl.textContent   = s.raw;
+      cleanEl.innerHTML   = s.cleaned;
+      legend.innerHTML    = 'tone: <b style="color:var(--text);font-weight:500">' + s.tone + '</b>';
+    }
+
+    tabs.forEach(b => b.addEventListener('click', () => selectTab(b.dataset.tab)));
+  })();
+
+  // tones
+  (() => {
+    document.querySelectorAll('.tone').forEach(t => t.addEventListener('click', () => {
+      document.querySelectorAll('.tone').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+    }));
+  })();
+</script>
+</body></html>

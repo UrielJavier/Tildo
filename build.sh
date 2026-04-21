@@ -25,6 +25,9 @@ cp "${BUILD_DIR}/VoiceToText" "${APP_DIR}/Contents/MacOS/${APP_NAME}"
 # Copy Info.plist
 cp "Sources/VoiceToText/Resources/Info.plist" "${APP_DIR}/Contents/Info.plist"
 
+# Copy app icon
+cp "icon/Tildo.icns" "${APP_DIR}/Contents/Resources/"
+
 # Copy image resources
 cp "Sources/VoiceToText/Resources/github-mark.png" "${APP_DIR}/Contents/Resources/"
 cp "Sources/VoiceToText/Resources/github-mark-white.png" "${APP_DIR}/Contents/Resources/"
