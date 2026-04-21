@@ -1,5 +1,7 @@
 # Tildo
 
+<img src="docs/hero.png" alt="Tildo — voice to text on your Mac" width="100%"/>
+
 **Speak. It types.** A macOS menu bar app that turns your voice into text — right where your cursor is. No cloud, no subscriptions, no data leaving your Mac.
 
 Built on [OpenAI's Whisper](https://github.com/openai/whisper) running locally via [whisper.cpp](https://github.com/ggerganov/whisper.cpp).
