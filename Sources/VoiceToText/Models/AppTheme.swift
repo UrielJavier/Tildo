@@ -3,6 +3,7 @@ import SwiftUI
 enum AppTheme: String, CaseIterable, Codable, Identifiable {
     case light = "Light"
     case dark = "Dark"
+    case auto = "Auto"
 
     var id: String { rawValue }
 
@@ -10,6 +11,7 @@ enum AppTheme: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .light: return ThemeColors.light
         case .dark:  return ThemeColors.dark
+        case .auto:  return ThemeColors.light  // resolved at render time via system
         }
     }
 
@@ -21,6 +23,7 @@ enum AppTheme: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .light: return .light
         case .dark:  return .dark
+        case .auto:  return nil  // nil = follow system
         }
     }
 }

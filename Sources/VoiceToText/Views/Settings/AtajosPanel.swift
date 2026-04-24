@@ -23,9 +23,38 @@ struct AtajosPanel: View {
                 .padding(.horizontal, 28)
                 .padding(.bottom, 20)
 
+            triggerModeSection
+                .padding(.horizontal, 28)
+                .padding(.bottom, 16)
+
             shortcutsCard
                 .padding(.horizontal, 28)
                 .padding(.bottom, 28)
+        }
+    }
+
+    // MARK: - Trigger mode
+
+    private var triggerModeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Trigger mode")
+                .font(DS.Fonts.sans(11, weight: .medium))
+                .foregroundStyle(DS.Colors.ink3)
+                .padding(.horizontal, 2)
+
+            HStack(spacing: 10) {
+                TriggerModeCard(
+                    title: "Hold to talk",
+                    description: "Records while the hotkey is held.",
+                    isSelected: state.triggerMode == .holdToTalk
+                ) { state.triggerMode = .holdToTalk; onSave() }
+
+                TriggerModeCard(
+                    title: "Tap to toggle",
+                    description: "Tap once to start, again to stop.",
+                    isSelected: state.triggerMode == .tapToToggle
+                ) { state.triggerMode = .tapToToggle; onSave() }
+            }
         }
     }
 
@@ -198,16 +227,33 @@ private struct ShortcutRow: View {
 
         let relevantMask: NSEvent.ModifierFlags = [.command, .shift, .option, .control, .function]
 
-        holder.install(matching: [.keyDown, .flagsChanged]) { event in
+        holder.install(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
             guard self.isEditing else { return event }
 
             if event.type == .flagsChanged {
-                // Update live modifier display; don't consume modifier events
-                let mods = event.modifierFlags.intersection(relevantMask)
-                self.liveModifiers = mods.rawValue
-                // If modifiers changed while a key is held, reset key (key was released)
-                if mods.isEmpty { self.liveKeyCode = nil; self.cancelCountdown() }
+                let newMods = event.modifierFlags.intersection(relevantMask)
+                let prevMods = NSEvent.ModifierFlags(rawValue: self.liveModifiers)
+                self.liveModifiers = newMods.rawValue
+
+                if newMods.isEmpty {
+                    self.liveKeyCode = nil
+                    self.cancelCountdown()
+                } else if prevMods.isSubset(of: newMods) {
+                    // New modifier added — restart countdown if combo is complete
+                    if self.liveKeyCode != nil { self.startCountdown() }
+                } else {
+                    // Modifier released — cancel countdown
+                    self.cancelCountdown()
+                }
                 return event
+            }
+
+            if event.type == .keyUp {
+                if event.keyCode == self.liveKeyCode {
+                    self.liveKeyCode = nil
+                    self.cancelCountdown()
+                }
+                return nil
             }
 
             // keyDown — Escape with no extra modifiers = cancel recording
@@ -217,11 +263,14 @@ private struct ShortcutRow: View {
                 return nil
             }
 
+            // Key repeats don't change the combo — ignore to avoid resetting countdown
+            if event.isARepeat { return nil }
+
             let mods = event.modifierFlags.intersection(relevantMask)
             self.liveKeyCode = event.keyCode
             self.liveModifiers = mods.rawValue
             self.startCountdown()
-            return nil  // consume so key doesn't reach focused app
+            return nil
         }
     }
 
@@ -320,6 +369,39 @@ private struct KeyCapCell: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 5))
             .shadow(color: .black.opacity(isLive ? 0 : 0.06), radius: 0, x: 0, y: 1)
+    }
+}
+
+// MARK: - Trigger mode card
+
+private struct TriggerModeCard: View {
+    let title: String
+    let description: String
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(DS.Fonts.sans(13, weight: .medium))
+                    .foregroundStyle(isSelected ? DS.Colors.rec : DS.Colors.ink)
+                Text(description)
+                    .font(DS.Fonts.sans(12))
+                    .foregroundStyle(DS.Colors.ink3)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(isSelected ? DS.Colors.rec.opacity(0.06) : DS.Colors.card)
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.lg)
+                    .strokeBorder(isSelected ? DS.Colors.rec : DS.Colors.line,
+                                  lineWidth: isSelected ? 1.5 : 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+        }
+        .buttonStyle(.plain)
     }
 }
 

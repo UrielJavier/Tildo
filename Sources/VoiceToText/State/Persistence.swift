@@ -11,6 +11,8 @@ extension AppState {
         static let hotkeyModifiers = "hotkeyModifiers"
         static let cancelKeyCode = "cancelKeyCode"
         static let cancelModifiers = "cancelModifiers"
+        static let triggerMode = "triggerMode"
+        static let showInDock = "showInDock"
         static let startSound = "startSound"
         static let stopSound = "stopSound"
         static let notifyOnComplete = "notifyOnComplete"
@@ -54,6 +56,8 @@ extension AppState {
         Self.defaults.set(Int(hotkeyModifiers), forKey: Keys.hotkeyModifiers)
         Self.defaults.set(Int(cancelKeyCode), forKey: Keys.cancelKeyCode)
         Self.defaults.set(Int(cancelModifiers), forKey: Keys.cancelModifiers)
+        Self.defaults.set(triggerMode.rawValue, forKey: Keys.triggerMode)
+        Self.defaults.set(showInDock, forKey: Keys.showInDock)
         Self.defaults.set(startSound.rawValue, forKey: Keys.startSound)
         Self.defaults.set(stopSound.rawValue, forKey: Keys.stopSound)
         Self.defaults.set(notifyOnComplete, forKey: Keys.notifyOnComplete)
@@ -113,6 +117,11 @@ extension AppState {
         if Self.defaults.object(forKey: Keys.cancelKeyCode) != nil {
             cancelKeyCode = UInt16(Self.defaults.integer(forKey: Keys.cancelKeyCode))
             cancelModifiers = UInt(Self.defaults.integer(forKey: Keys.cancelModifiers))
+        }
+        if let raw = Self.defaults.string(forKey: Keys.triggerMode),
+           let mode = TriggerMode(rawValue: raw) { triggerMode = mode }
+        if Self.defaults.object(forKey: Keys.showInDock) != nil {
+            showInDock = Self.defaults.bool(forKey: Keys.showInDock)
         }
         if let rawStartSound = Self.defaults.string(forKey: Keys.startSound),
            let restoredStartSound = SoundEffect(rawValue: rawStartSound) { startSound = restoredStartSound }

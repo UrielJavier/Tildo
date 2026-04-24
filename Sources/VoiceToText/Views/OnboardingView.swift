@@ -417,7 +417,7 @@ private struct ModelStep: View {
                         tier: tier,
                         isSelected: selected == tier.model,
                         isDownloading: appState.downloadingModel == tier.model,
-                        downloadProgress: appState.downloadProgress
+                        isDownloaded: tier.model.isDownloaded
                     ) { selected = tier.model }
                 }
             }
@@ -425,19 +425,14 @@ private struct ModelStep: View {
             Spacer().frame(height: 18)
 
             if appState.isDownloading {
-                VStack(spacing: 6) {
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2).fill(DS.Colors.line).frame(height: 3)
-                        RoundedRectangle(cornerRadius: 2).fill(DS.Colors.moss)
-                            .frame(width: CGFloat(appState.downloadProgress) * 340, height: 3)
-                    }
-                    .frame(maxWidth: .infinity)
-                    Text("Downloading… \(Int(appState.downloadProgress * 100))%")
-                        .font(DS.Fonts.mono(11.5))
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Downloading…")
+                        .font(DS.Fonts.sans(13))
                         .foregroundStyle(DS.Colors.ink3)
                 }
                 .transition(.opacity)
-            } else if selected.isDownloaded || appState.isModelLoaded {
+            } else if selected.isDownloaded {
                 VStack(spacing: 12) {
                     HStack(spacing: 6) {
                         Circle().fill(DS.Colors.moss).frame(width: 6, height: 6)
@@ -471,7 +466,7 @@ private struct ModelRadioCard: View {
     let tier: OnboardingModelTier
     let isSelected: Bool
     let isDownloading: Bool
-    let downloadProgress: Double
+    let isDownloaded: Bool
     let action: () -> Void
 
     var body: some View {
@@ -508,7 +503,14 @@ private struct ModelRadioCard: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 4) {
+                    if isDownloading {
+                        ProgressView().controlSize(.mini)
+                    } else if isDownloaded {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(DS.Colors.moss)
+                    }
                     Text(tier.size)
                         .font(DS.Fonts.mono(11))
                         .foregroundStyle(DS.Colors.ink2)
@@ -539,11 +541,20 @@ private struct ShortcutStep: View {
     let onContinue: () -> Void
 
     @State private var triggered = false
-    @State private var pressing = false
-    @State private var tappedKeys: Set<String> = []
+    @State private var liveParts: Set<String> = []
     @State private var eventMonitor: Any?
 
-    private var isComplete: Bool { triggered || tappedKeys.count >= keyParts.count }
+    private var isComplete: Bool { triggered }
+
+    private func modifierSymbols(for flags: NSEvent.ModifierFlags) -> Set<String> {
+        var s = Set<String>()
+        if flags.contains(.control)  { s.insert("⌃") }
+        if flags.contains(.option)   { s.insert("⌥") }
+        if flags.contains(.shift)    { s.insert("⇧") }
+        if flags.contains(.command)  { s.insert("⌘") }
+        if flags.contains(.function) { s.insert("fn") }
+        return s
+    }
 
     private var keyParts: [String] {
         let mods = NSEvent.ModifierFlags(rawValue: appState.hotkeyModifiers)
@@ -585,17 +596,12 @@ private struct ShortcutStep: View {
 
                 HStack(spacing: 8) {
                     ForEach(keyParts, id: \.self) { part in
-                        let isActive = pressing || triggered || tappedKeys.contains(part)
-                        Button {
-                            withAnimation(DS.Motion.snappy) { _ = tappedKeys.insert(part) }
-                        } label: {
-                            OnboardingKeyCap(label: part, glow: isActive)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(tappedKeys.contains(part))
+                        let isActive = triggered || liveParts.contains(part)
+                        OnboardingKeyCap(label: part, glow: isActive)
                     }
                 }
-                .animation(DS.Motion.snappy, value: pressing)
+                .animation(DS.Motion.snappy, value: liveParts)
+                .animation(DS.Motion.snappy, value: triggered)
             }
             .padding(16)
             .background(DS.Colors.panel)
@@ -629,16 +635,23 @@ private struct ShortcutStep: View {
         let targetKeyCode = appState.hotkeyKeyCode
         let targetMods = NSEvent.ModifierFlags(rawValue: appState.hotkeyModifiers)
             .intersection([.command, .shift, .option, .control, .function])
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { event in
+        let mainKeyLabel = keyLabel(for: targetKeyCode)
+        let relevantMask: NSEvent.ModifierFlags = [.command, .shift, .option, .control, .function]
+
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+            if event.type == .flagsChanged {
+                let held = event.modifierFlags.intersection(relevantMask)
+                withAnimation(DS.Motion.snappy) { liveParts = self.modifierSymbols(for: held) }
+                return event
+            }
             if event.type == .keyDown, event.keyCode == targetKeyCode {
-                let mods = event.modifierFlags.intersection([.command, .shift, .option, .control, .function])
-                if mods == targetMods {
-                    withAnimation { pressing = true; triggered = true }
-                    return nil
-                }
+                withAnimation(DS.Motion.snappy) { liveParts.insert(mainKeyLabel) }
+                let mods = event.modifierFlags.intersection(relevantMask)
+                if mods == targetMods { withAnimation { triggered = true } }
+                return nil
             }
             if event.type == .keyUp, event.keyCode == targetKeyCode {
-                withAnimation { pressing = false }
+                withAnimation(DS.Motion.snappy) { liveParts.remove(mainKeyLabel) }
             }
             return event
         }

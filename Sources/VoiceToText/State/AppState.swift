@@ -36,6 +36,8 @@ final class AppState {
     var hotkeyModifiers: UInt = NSEvent.ModifierFlags([.command, .shift]).rawValue
     var cancelKeyCode: UInt16 = UInt16.max   // UInt16.max = not assigned
     var cancelModifiers: UInt = 0
+    var triggerMode: TriggerMode = .tapToToggle
+    var showInDock: Bool = false
     var startSound: SoundEffect = .pop
     var stopSound: SoundEffect = .funk
     var notifyOnComplete = false
@@ -175,6 +177,8 @@ final class AppState {
         hotkeyModifiers = NSEvent.ModifierFlags([.command, .function]).rawValue
         cancelKeyCode = UInt16.max
         cancelModifiers = 0
+        triggerMode = .tapToToggle
+        showInDock = false
         startSound = .pop
         stopSound = .funk
         notifyOnComplete = false

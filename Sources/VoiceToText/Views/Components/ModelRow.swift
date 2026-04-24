@@ -4,7 +4,6 @@ struct ModelRow: View {
     let model: WhisperModel
     let isSelected: Bool
     let isDownloading: Bool
-    let downloadProgress: Double
     let chips: [WhisperModel.ModelChip]
     let onSelect: () -> Void
     var onDelete: (() -> Void)?
@@ -28,8 +27,7 @@ struct ModelRow: View {
                             }
                             Spacer()
                             if isDownloading {
-                                ProgressView(value: downloadProgress).frame(width: 40)
-                                Text("\(Int(downloadProgress * 100))%").font(.caption2).foregroundStyle(.secondary)
+                                ProgressView().controlSize(.mini)
                             } else if !model.isDownloaded {
                                 Image(systemName: "arrow.down.circle").foregroundStyle(.secondary).font(.caption)
                             }

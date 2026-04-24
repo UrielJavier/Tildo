@@ -52,7 +52,6 @@ struct ModelsPanel: View {
                                 tier: tier,
                                 isLoaded: state.model == tier.model && state.isModelLoaded,
                                 isDownloading: state.downloadingModel == tier.model,
-                                downloadProgress: state.downloadProgress,
                                 modelListVersion: state.modelListVersion,
                                 onDownload: { onDownloadModel?(tier.model) },
                                 onLoad: { onLoadModel?(tier.model) },
@@ -194,7 +193,6 @@ private struct RecommendedModelCard: View {
     let tier: ModelTier
     let isLoaded: Bool
     let isDownloading: Bool
-    let downloadProgress: Double
     let modelListVersion: Int
     let onDownload: () -> Void
     let onLoad: () -> Void
@@ -286,19 +284,13 @@ private struct RecommendedModelCard: View {
     }
 
     private var downloadingAction: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 2).fill(DS.Colors.line).frame(height: 3)
-                RoundedRectangle(cornerRadius: 2).fill(DS.Colors.moss)
-                    .frame(width: CGFloat(downloadProgress) * 100, height: 3)
-            }
-            HStack {
-                Text("\(Int(downloadProgress * 100))%")
-                    .font(DS.Fonts.mono(11))
-                    .foregroundStyle(DS.Colors.ink3)
-                Spacer()
-                Button("Cancel", action: onCancel).buttonStyle(.dsDestructive)
-            }
+        HStack(spacing: 8) {
+            ProgressView().controlSize(.small)
+            Text("Downloading…")
+                .font(DS.Fonts.sans(12))
+                .foregroundStyle(DS.Colors.ink3)
+            Spacer()
+            Button("Cancel", action: onCancel).buttonStyle(.dsDestructive)
         }
     }
 
@@ -407,7 +399,6 @@ struct AllModelsSheet: View {
                             model: model,
                             isLoaded: state.model == model && state.isModelLoaded,
                             isDownloading: state.downloadingModel == model,
-                            downloadProgress: state.downloadProgress,
                             modelListVersion: state.modelListVersion,
                             onDownload: { onDownloadModel?(model) },
                             onLoad: { onLoadModel?(model) },
@@ -466,7 +457,6 @@ private struct AllModelRow: View {
     let model: WhisperModel
     let isLoaded: Bool
     let isDownloading: Bool
-    let downloadProgress: Double
     let modelListVersion: Int
     let onDownload: () -> Void
     let onLoad: () -> Void

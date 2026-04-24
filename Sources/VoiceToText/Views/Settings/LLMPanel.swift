@@ -363,7 +363,7 @@ struct LLMPanel: View {
             _ = try await processor.process(
                 text: "ping",
                 provider: .claudeCode,
-                model: LLMProvider.claudeCode.defaultModel,
+                model: cliModel,
                 stylePrompt: "Reply with exactly: pong",
                 translateTo: nil
             )

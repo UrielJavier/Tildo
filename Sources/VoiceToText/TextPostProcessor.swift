@@ -29,6 +29,11 @@ actor TextPostProcessor {
     Maintain the original meaning and words as much as possible.
     """
 
+    func warmUp(provider: LLMProvider, model: String) async {
+        guard provider == .claudeCode, let path = LLMClient.findClaudeCLIPublic() else { return }
+        await client.warmUp(claudePath: path, model: model)
+    }
+
     func process(
         text: String,
         provider: LLMProvider,

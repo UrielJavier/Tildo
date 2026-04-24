@@ -27,7 +27,6 @@ struct VoiceToTextApp: App {
             let state = appDelegate.appState
             if state.isDownloading {
                 Image(systemName: "arrow.down.circle")
-                Text("\(Int(state.downloadProgress * 100))%")
             } else {
                 MenuBarEqualizer(status: state.status, level: state.audioLevel)
             }

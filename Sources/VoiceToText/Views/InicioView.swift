@@ -60,21 +60,13 @@ struct InicioView: View {
         NSFullUserName().components(separatedBy: " ").first ?? ""
     }
 
-    private var greeting: String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        if hour < 13 { return String(localized: "Good morning") }
-        if hour < 20 { return String(localized: "Good afternoon") }
-        return String(localized: "Good evening")
+    private var triggerVerb: String {
+        state.triggerMode == .holdToTalk ? "hold" : "press"
     }
 
-    private var dayTimeLabel: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale.current
-        formatter.dateFormat = "EEEE"
-        let weekday = formatter.string(from: Date()).uppercased()
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm"
-        return "\(weekday) · \(timeFormatter.string(from: Date()))"
+    private var hotkeyParts: [String] {
+        hotkeyComponents(keyCode: state.hotkeyKeyCode,
+                         modifiers: NSEvent.ModifierFlags(rawValue: state.hotkeyModifiers))
     }
 
     private var claudeCodeActive: Bool {
@@ -108,12 +100,28 @@ struct InicioView: View {
                 .padding(.top, 16)
 
                 // H1 greeting
-                Text("\(greeting), \(firstName)")
-                    .font(DS.Fonts.display(28))
-                    .foregroundStyle(DS.Colors.ink)
-                    .tracking(-0.4)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 8)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Hey, \(firstName)")
+                        .font(DS.Fonts.display(28))
+                        .foregroundStyle(DS.Colors.ink)
+                        .tracking(-0.4)
+
+                    HStack(spacing: 5) {
+                        Text("Don't type, just \(triggerVerb)")
+                            .font(DS.Fonts.sans(14))
+                            .foregroundStyle(DS.Colors.ink3)
+
+                        ForEach(hotkeyParts, id: \.self) { part in
+                            HomeKeyCap(symbol: part)
+                        }
+
+                        Text(".")
+                            .font(DS.Fonts.sans(14))
+                            .foregroundStyle(DS.Colors.ink3)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
 
                 // Permissions banner (only when something is missing)
                 PermissionsBanner()
@@ -306,6 +314,26 @@ private struct PermissionsBanner: View {
 
     private func openSettings(_ urlString: String) {
         if let url = URL(string: urlString) { NSWorkspace.shared.open(url) }
+    }
+}
+
+private struct HomeKeyCap: View {
+    let symbol: String
+    private var isWide: Bool { symbol.count > 1 }
+
+    var body: some View {
+        Text(symbol)
+            .font(isWide ? DS.Fonts.sans(10, weight: .medium) : DS.Fonts.mono(12, weight: .medium))
+            .foregroundStyle(DS.Colors.ink2)
+            .frame(minWidth: isWide ? 34 : 24, minHeight: 22)
+            .padding(.horizontal, isWide ? 5 : 0)
+            .background(DS.Colors.paper)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(DS.Colors.line, lineWidth: 1)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .shadow(color: .black.opacity(0.06), radius: 0, x: 0, y: 1)
     }
 }
 

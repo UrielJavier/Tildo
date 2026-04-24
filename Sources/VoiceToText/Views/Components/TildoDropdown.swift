@@ -45,9 +45,15 @@ struct TildoDropdown<Item: Hashable, Trigger: View, Row: View>: View {
     @State private var highlightedIndex = 0
     @State private var clickMonitor: Any?
     @State private var keyMonitor: Any?
+    @State private var triggerWidth: CGFloat = 0
 
     var body: some View {
         trigger()
+            .background(GeometryReader { geo in
+                Color.clear
+                    .onAppear { triggerWidth = geo.size.width }
+                    .onChange(of: geo.size.width) { _, w in triggerWidth = w }
+            })
             .overlay(alignment: listAlignment) {
                 if isOpen {
                     dropdownList
@@ -84,9 +90,8 @@ struct TildoDropdown<Item: Hashable, Trigger: View, Row: View>: View {
                 }
             }
         }
-        // fixedSize(horizontal: true) makes the list ignore the trigger's narrow proposed width
-        // and instead use the natural content width (at least minListWidth).
-        .frame(minWidth: minListWidth > 0 ? minListWidth : nil, maxHeight: maxListHeight)
+        // At least as wide as the trigger; fixedSize lets it grow for longer content.
+        .frame(minWidth: max(triggerWidth, minListWidth), maxHeight: maxListHeight)
         .fixedSize(horizontal: true, vertical: true)
         .background(DS.Colors.paper)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))

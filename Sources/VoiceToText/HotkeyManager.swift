@@ -10,6 +10,7 @@ private func log(_ msg: String) {
 final class HotkeyManager {
     private var hotkeyRef: EventHotKeyRef?
     private let onToggle: () -> Void
+    var onKeyUp: (() -> Void)?
     var keyCode: UInt16 = 1
     var modifiers: NSEvent.ModifierFlags = [.command, .shift]
     var isEnabled = true
@@ -60,19 +61,27 @@ final class HotkeyManager {
     }
 
     private func installCarbonHandler() {
-        var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        var eventTypes = [
+            EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed)),
+            EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased))
+        ]
         InstallEventHandler(
             GetApplicationEventTarget(),
             { (_, event, _) -> OSStatus in
                 guard let mgr = HotkeyManager.current, mgr.isEnabled else {
                     return OSStatus(eventNotHandledErr)
                 }
-                log("MATCH — toggling recording")
-                mgr.onToggle()
+                if GetEventKind(event) == UInt32(kEventHotKeyPressed) {
+                    log("MATCH pressed")
+                    mgr.onToggle()
+                } else {
+                    log("MATCH released")
+                    mgr.onKeyUp?()
+                }
                 return noErr
             },
-            1,
-            &eventType,
+            2,
+            &eventTypes,
             nil,
             nil
         )

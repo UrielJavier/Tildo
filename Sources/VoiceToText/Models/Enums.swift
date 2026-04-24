@@ -47,7 +47,29 @@ enum TranscriptionMode: String, CaseIterable {
 
 enum OutputMode: String, CaseIterable {
     case typeText = "Type"
+    case pasteAtCursor = "Paste"
     case clipboard = "Clipboard"
+
+    var label: String {
+        switch self {
+        case .typeText:      return "Type at cursor"
+        case .pasteAtCursor: return "Paste at cursor"
+        case .clipboard:     return "Keep on clipboard"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .typeText:      return "Simulates keystrokes. Works anywhere."
+        case .pasteAtCursor: return "Uses clipboard. Faster for long text."
+        case .clipboard:     return "Don't insert — just copy."
+        }
+    }
+}
+
+enum TriggerMode: String, CaseIterable {
+    case tapToToggle = "tapToToggle"
+    case holdToTalk = "holdToTalk"
 }
 
 enum SoundEffect: String, CaseIterable {

@@ -33,14 +33,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         appState.restore()
         ensureValidModelSelected()
+        applyDockPolicy()
+        if appState.llmPostProcessEnabled && appState.llmProvider == .claudeCode {
+            Task { await postProcessor.warmUp(provider: appState.llmProvider, model: appState.llmModel) }
+        }
         setupHotkey()
         registerService()
         showOnboardingIfNeeded()
         if appState.hasCompletedOnboarding {
             openMainWindow()
-        }
-        if !TextSimulator.hasAccessibilityPermission {
-            TextSimulator.requestAccessibilityPermission()
         }
         Task { await loadModel() }
         setupFrontmostAppTracking()
@@ -119,6 +120,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // will silently fail. Copy to clipboard as a reliable fallback and prompt the user.
                 TextSimulator.copyToClipboard(text: processed, autoPaste: false)
                 appState.lastError = "Accesibilidad no concedida — texto copiado al portapapeles. Pega con ⌘V. Ve a Ajustes > Privacidad > Accesibilidad para habilitar Tildo."
+            }
+        case .pasteAtCursor:
+            if hasAccess {
+                if let target = recordingTarget { TextSimulator.focusTarget(target) }
+                TextSimulator.copyToClipboard(text: processed, autoPaste: true)
+            } else {
+                TextSimulator.copyToClipboard(text: processed, autoPaste: false)
+                appState.lastError = "Accesibilidad no concedida — texto copiado al portapapeles. Pega con ⌘V."
             }
         case .clipboard:
             TextSimulator.copyToClipboard(text: processed)
@@ -243,7 +252,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupHotkey() {
         hotkeyManager = HotkeyManager { [weak self] in
             guard let self else { return }
-            Task { @MainActor in await self.toggleRecording() }
+            Task { @MainActor in
+                if self.appState.triggerMode == .holdToTalk && self.appState.isRecording { return }
+                await self.toggleRecording()
+            }
+        }
+        hotkeyManager?.onKeyUp = { [weak self] in
+            guard let self else { return }
+            Task { @MainActor in
+                guard self.appState.triggerMode == .holdToTalk,
+                      self.appState.isRecording else { return }
+                await self.toggleRecording()
+            }
         }
         hotkeyManager?.keyCode = appState.hotkeyKeyCode
         hotkeyManager?.modifiers = NSEvent.ModifierFlags(rawValue: appState.hotkeyModifiers)
@@ -406,8 +426,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func deactivateAppIfNoWindows() {
+        guard !appState.showInDock else { return }
         if !(mainWindow?.isVisible ?? false) {
             NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    func applyDockPolicy() {
+        if appState.showInDock {
+            NSApp.setActivationPolicy(.regular)
+        } else {
+            deactivateAppIfNoWindows()
         }
     }
 

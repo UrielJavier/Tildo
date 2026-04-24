@@ -6,6 +6,19 @@ actor LLMClient {
         var errorDescription: String? { message }
     }
 
+    private var daemon: ClaudeCodeDaemon?
+
+    func warmUp(claudePath: String, model: String) async {
+        if daemon == nil {
+            daemon = ClaudeCodeDaemon(claudePath: claudePath, model: model)
+        } else if await daemon?.model != model {
+            await daemon?.stop()
+            daemon = ClaudeCodeDaemon(claudePath: claudePath, model: model)
+        }
+        // Start the process eagerly so it's warm for the first request
+        Task { try? await daemon?.send(text: "ping", systemPrompt: "Reply with one word: ready") }
+    }
+
     func process(text: String, systemPrompt: String, provider: LLMProvider, apiKey: String, model: String) async throws -> String {
         if provider == .claudeCode {
             return try await processWithClaudeCode(text: text, systemPrompt: systemPrompt, model: model)
@@ -25,56 +38,32 @@ actor LLMClient {
         return try extractContent(from: data, provider: provider)
     }
 
-    // MARK: - Claude Code CLI
+    // MARK: - Claude Code daemon
 
     private func processWithClaudeCode(text: String, systemPrompt: String, model: String) async throws -> String {
-        let claudePath = Self.findClaudeCLI()
-        guard let claudePath else {
+        guard let claudePath = Self.findClaudeCLI() else {
             throw LLMError(message: "Claude Code CLI not found. Install it with: npm install -g @anthropic-ai/claude-code")
         }
 
-        let fullPrompt = "\(systemPrompt)\n\nText to process:\n\(text)"
+        // Lazily create or update daemon when model changes
+        if daemon == nil {
+            daemon = ClaudeCodeDaemon(claudePath: claudePath, model: model)
+        } else if await daemon?.model != model {
+            await daemon?.stop()
+            daemon = ClaudeCodeDaemon(claudePath: claudePath, model: model)
+        }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            let process = Process()
-            let stdout = Pipe()
-            let stderr = Pipe()
-
-            process.executableURL = URL(fileURLWithPath: claudePath)
-            process.arguments = ["-p", fullPrompt, "--model", model]
-            process.standardOutput = stdout
-            process.standardError = stderr
-
-            // claude is a Node.js script — ensure node is in PATH by prepending
-            // the directory that contains the claude binary (node lives there too).
-            let claudeDir = URL(fileURLWithPath: claudePath).deletingLastPathComponent().path
-            var env = ProcessInfo.processInfo.environment
-            env["PATH"] = claudeDir + ":/usr/local/bin:/opt/homebrew/bin:" + (env["PATH"] ?? "")
-            process.environment = env
-
-            process.terminationHandler = { _ in
-                let outData = stdout.fileHandleForReading.readDataToEndOfFile()
-                let errData = stderr.fileHandleForReading.readDataToEndOfFile()
-                let output = String(data: outData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let errorOutput = String(data: errData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
-                if process.terminationStatus != 0 {
-                    let msg = errorOutput.isEmpty ? "Claude Code exited with status \(process.terminationStatus)" : errorOutput
-                    continuation.resume(throwing: LLMError(message: "Claude Code error: \(msg)"))
-                } else if output.isEmpty {
-                    continuation.resume(throwing: LLMError(message: "Claude Code returned empty response"))
-                } else {
-                    continuation.resume(returning: output)
-                }
-            }
-
-            do {
-                try process.run()
-            } catch {
-                continuation.resume(throwing: LLMError(message: "Failed to launch Claude Code: \(error.localizedDescription)"))
-            }
+        do {
+            return try await daemon!.send(text: text, systemPrompt: systemPrompt)
+        } catch {
+            // Process may have died — recreate and retry once
+            await daemon?.stop()
+            daemon = ClaudeCodeDaemon(claudePath: claudePath, model: model)
+            return try await daemon!.send(text: text, systemPrompt: systemPrompt)
         }
     }
+
+    static func findClaudeCLIPublic() -> String? { findClaudeCLI() }
 
     private static func findClaudeCLI() -> String? {
         let candidates = [

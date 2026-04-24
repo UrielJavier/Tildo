@@ -21,7 +21,7 @@ struct GeneralPanel: View {
     @State private var openSelector: SelectorField? = nil
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
-    private enum SelectorField { case language, outputMode, uiLanguage }
+    private enum SelectorField { case language, uiLanguage }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -42,6 +42,11 @@ struct GeneralPanel: View {
                 .zIndex(1)
 
             switchesCard
+                .padding(.horizontal, 28)
+                .padding(.top, 12)
+                .zIndex(0)
+
+            insertionCard
                 .padding(.horizontal, 28)
                 .padding(.top, 12)
                 .zIndex(0)
@@ -67,8 +72,23 @@ struct GeneralPanel: View {
             Divider().padding(.leading, 16)
 
             settingRow(title: "Show in menu bar",
-                       desc: "The Tildo icon lives in the top right.") {
+                       desc: "The icon you click to dictate.") {
                 DSToggleTrack(isOn: $state.showFloatingWindow.onChange { onSave() })
+            }
+            Divider().padding(.leading, 16)
+
+            Divider().padding(.leading, 16)
+
+            settingRow(title: "Show in dock",
+                       desc: "Add Tildo to the dock alongside other apps.") {
+                DSToggleTrack(isOn: Binding(
+                    get: { state.showInDock },
+                    set: { v in
+                        state.showInDock = v
+                        NSApp.setActivationPolicy(v ? .regular : .accessory)
+                        onSave()
+                    }
+                ))
             }
             Divider().padding(.leading, 16)
 
@@ -117,30 +137,6 @@ struct GeneralPanel: View {
 
             Divider().padding(.leading, 16)
 
-            // Output mode
-            selectorRow(title: "Output mode",
-                        desc: "Keyboard simulates keystrokes. Clipboard copies the text.") {
-                TildoDropdown(
-                    items: OutputMode.allCases,
-                    isOpen: Binding(get: { openSelector == .outputMode },
-                                    set: { openSelector = $0 ? .outputMode : nil }),
-                    triggerHeight: rowTriggerHeight,
-                    onSelect: { mode in state.outputMode = mode; onSave() },
-                    minListWidth: 180,
-                    listAlignment: .topTrailing
-                ) {
-                    selectorTrigger(label: state.outputMode.rawValue,
-                                    isOpen: openSelector == .outputMode,
-                                    action: { openSelector = openSelector == .outputMode ? nil : .outputMode })
-                } row: { mode, highlighted in
-                    TildoDropdownRow(label: mode.rawValue, isHighlighted: highlighted,
-                                     isSelected: state.outputMode == mode)
-                }
-            }
-            .zIndex(openSelector == .outputMode ? 2 : 0)
-
-            Divider().padding(.leading, 16)
-
             // App language
             selectorRow(title: "App language",
                         desc: "Language used in the Tildo interface.") {
@@ -172,6 +168,59 @@ struct GeneralPanel: View {
                 .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg)
                     .strokeBorder(DS.Colors.line, lineWidth: 1))
         )
+    }
+
+    // MARK: - Insertion card
+
+    private var insertionCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Insertion")
+                .font(DS.Fonts.sans(11, weight: .medium))
+                .foregroundStyle(DS.Colors.ink3)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+
+            ForEach(OutputMode.allCases, id: \.self) { mode in
+                if mode != OutputMode.allCases.first { Divider().padding(.leading, 44) }
+                insertionRow(for: mode)
+            }
+            .padding(.bottom, 4)
+        }
+        .background(DS.Colors.card)
+        .overlay(RoundedRectangle(cornerRadius: DS.Radius.lg).strokeBorder(DS.Colors.line, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.lg))
+    }
+
+    private func insertionRow(for mode: OutputMode) -> some View {
+        let isSelected = state.outputMode == mode
+        return Button {
+            state.outputMode = mode; onSave()
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(isSelected ? DS.Colors.rec : DS.Colors.line, lineWidth: 1.5)
+                        .frame(width: 18, height: 18)
+                    if isSelected {
+                        Circle().fill(DS.Colors.rec).frame(width: 10, height: 10)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(mode.label)
+                        .font(DS.Fonts.sans(13, weight: .medium))
+                        .foregroundStyle(DS.Colors.ink)
+                    Text(mode.description)
+                        .font(DS.Fonts.sans(12))
+                        .foregroundStyle(DS.Colors.ink3)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(isSelected ? DS.Colors.rec.opacity(0.05) : Color.clear)
+        }
+        .buttonStyle(.plain)
     }
 
     // Fixed height for each selector row trigger so TildoDropdown offsets correctly
