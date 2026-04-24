@@ -59,8 +59,15 @@ echo "==> Verifying..."
 codesign -dvvv "${APP_DIR}" 2>&1 | grep -E "Signature|Identifier|CDHash|Authority"
 codesign -d --entitlements - "${APP_DIR}" 2>&1 | head -20
 
+VERSION="${APP_VERSION:-dev}"
+ZIP_NAME="${APP_NAME}-${VERSION}-arm64.zip"
+echo "==> Zipping ${ZIP_NAME}..."
+rm -f "${ZIP_NAME}"
+ditto -c -k --sequesterRsrc --keepParent "${APP_DIR}" "${ZIP_NAME}"
+
 echo ""
 echo "==> Done! Run with: open ${APP_DIR}"
+echo "==> Archive: ${ZIP_NAME}"
 echo ""
 echo "==> Note: Accessibility permission persists across builds (cert-hash based requirement)."
 echo "    First build under com.urieljavier.Tildo: grant permission once in System Settings > Accessibility."
