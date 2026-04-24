@@ -249,7 +249,9 @@ struct InicioView: View {
         .background(DS.Colors.paper)
 
         if claudeCodeActive {
-            ClaudeCodeFooterBanner()
+            ClaudeCodeFooterBanner {
+                state.llmPostProcessEnabled = false
+            }
         }
         } // VStack
     }
@@ -459,13 +461,15 @@ private struct LastTranscriptionCard: View {
 // MARK: - Claude Code Footer Banner
 
 private struct ClaudeCodeFooterBanner: View {
+    let onDisable: () -> Void
+
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "sparkles")
                 .font(.system(size: 11))
                 .foregroundStyle(DS.Colors.accent)
 
-            Text("Claude Code active as AI engine")
+            Text("Claude Code active")
                 .font(DS.Fonts.sans(11, weight: .semibold))
                 .foregroundStyle(DS.Colors.ink2)
 
@@ -473,13 +477,24 @@ private struct ClaudeCodeFooterBanner: View {
                 .foregroundStyle(DS.Colors.ink4)
                 .font(DS.Fonts.sans(11))
 
-            Text("If macOS requests system permissions (Photos, Music…), you can decline.")
+            Text("If macOS requests system permissions, you can decline.")
                 .font(DS.Fonts.sans(11))
                 .foregroundStyle(DS.Colors.ink3)
                 .lineLimit(1)
                 .truncationMode(.tail)
 
             Spacer()
+
+            Button("Disable") {
+                onDisable()
+            }
+            .buttonStyle(.plain)
+            .font(DS.Fonts.sans(11, weight: .medium))
+            .foregroundStyle(DS.Colors.ink3)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(DS.Colors.accent.opacity(0.12))
+            .clipShape(Capsule())
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 9)
