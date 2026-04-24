@@ -334,22 +334,58 @@
   .privacy-item b { display: block; font-weight: 500; font-size: 16px; margin-bottom: 4px; color: var(--text); }
   .privacy-item span { color: var(--text3); font-size: 14.5px; line-height: 1.55; }
 
-  .network-diagram { background: var(--panel); border-radius: 16px; border: 1px solid var(--line); padding: 32px; display: flex; flex-direction: column; gap: 0; justify-content: flex-start; }
-  .nd-zone-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 14px; }
-  .nd-zone-label.local { color: var(--moss); }
-  .nd-zone-label.internet { color: var(--text4); }
-  .nd-local { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; display: flex; align-items: flex-start; gap: 0; }
-  .nd-node { display: flex; flex-direction: column; gap: 3px; flex: 1; text-align: center; }
-  .nd-node b { font-size: 13.5px; font-weight: 500; color: var(--text); }
-  .nd-node span { font-family: var(--mono); font-size: 11px; color: var(--text3); }
-  .nd-node.highlight b { color: var(--moss); }
-  .nd-arrow { flex-shrink: 0; color: var(--moss); display: flex; align-items: flex-start; padding: 0 16px; padding-top: 2px; }
-  .nd-arrow svg { width: 18px; height: 18px; }
-  .nd-divider { display: flex; align-items: center; gap: 14px; padding: 20px 0; }
-  .nd-divider::before, .nd-divider::after { content: ""; flex: 1; height: 1px; border-top: 1px dashed var(--line); }
-  .nd-divider span { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text4); white-space: nowrap; }
-  .nd-internet { border: 1px dashed var(--line); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; gap: 0; opacity: .5; }
-  .nd-opt-badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text4); border: 1px solid var(--line); border-radius: 4px; padding: 2px 7px; margin-top: 5px; width: fit-content; }
+  .network-diagram {
+    background: var(--panel); border-radius: 16px; border: 1px solid var(--line);
+    padding: 32px 28px; display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .nd-step {
+    width: 100%; display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; border-radius: 12px;
+    background: var(--bg2); border: 1px solid var(--line);
+  }
+  .nd-step.highlight { border-color: rgba(159,206,110,.35); background: rgba(159,206,110,.06); }
+  .nd-icon {
+    flex-shrink: 0; width: 36px; height: 36px; border-radius: 9px;
+    display: grid; place-items: center;
+    background: var(--panel); border: 1px solid var(--line);
+  }
+  .nd-step.highlight .nd-icon { background: rgba(159,206,110,.12); border-color: rgba(159,206,110,.3); }
+  .nd-icon svg { width: 16px; height: 16px; }
+  .nd-step-text { flex: 1; }
+  .nd-step-text b { display: block; font-size: 13.5px; font-weight: 500; color: var(--text); line-height: 1.2; }
+  .nd-step-text span { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .nd-step.highlight .nd-step-text b { color: var(--moss); }
+  .nd-conn {
+    width: 1px; height: 22px; background: linear-gradient(to bottom, var(--line), var(--line));
+    flex-shrink: 0; align-self: center;
+    margin: 0;
+  }
+  .nd-conn.dashed {
+    background: none;
+    border-left: 1px dashed var(--text4);
+    opacity: .5;
+  }
+  .nd-boundary {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 0 10px;
+  }
+  .nd-boundary::before, .nd-boundary::after {
+    content: ""; flex: 1; height: 1px; border-top: 1px dashed var(--text4); opacity: .3;
+  }
+  .nd-boundary span {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text4); white-space: nowrap;
+  }
+  .nd-opt-row {
+    width: 100%; display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; border-radius: 12px;
+    border: 1px dashed var(--line); opacity: .5;
+  }
+  .nd-opt-row .nd-icon { background: transparent; border-color: var(--line); }
+  .nd-tag {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text4); border: 1px solid var(--line); border-radius: 4px;
+    padding: 2px 7px; white-space: nowrap;
+  }
 
   /* ——— Closer ——— */
   .closer { padding-top: 140px; padding-bottom: 120px; border-top: 1px solid var(--line); overflow: hidden; position: relative; }
@@ -473,11 +509,7 @@
     .tone-chip { grid-column: 2; grid-row: 1; align-self: start; }
     .tone-preview { grid-column: 1 / -1; grid-row: 2; }
 
-    /* network diagram — stack vertically */
-    .nd-local { flex-direction: column; align-items: center; gap: 0; }
-    .nd-arrow { padding: 6px 0; }
-    .nd-arrow svg { transform: rotate(90deg); }
-    .nd-node { flex: none; width: 100%; }
+    /* network diagram — already vertical, nothing to change */
 
     /* closer */
     .closer h2 { font-size: clamp(38px, 10.5vw, 56px); }
@@ -605,7 +637,7 @@
     </div>
   </section>
 
-  <!-- ——— Tones ——— */
+  <!-- ——— Tones ——— -->
   <section class="tones wrap" id="tones">
     <div class="section-label">03 · Tones &amp; LLM</div>
     <h2 class="section-title">Rewrite what you said, <em>your way</em>.</h2>
@@ -682,38 +714,54 @@
         <div class="privacy-item"><span class="check"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l4 4L19 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Open source, MIT</b><span>Every line is auditable. Fork it. Package it. We don't know, because we can't.</span></div></div>
       </div>
       <div class="network-diagram">
-        <div class="nd-zone-label local">On your Mac</div>
-        <div class="nd-local">
-          <div class="nd-node">
-            <b>Microphone</b>
-            <span>audio input</span>
+
+        <div class="nd-step">
+          <div class="nd-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg>
           </div>
-          <div class="nd-arrow">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="nd-step-text">
+            <b>Your voice</b>
+            <span>captured locally · never saved</span>
           </div>
-          <div class="nd-node highlight">
+        </div>
+
+        <div class="nd-conn"></div>
+
+        <div class="nd-step highlight">
+          <div class="nd-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--moss)" stroke-width="1.8" stroke-linecap="round"><path d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9z"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+          </div>
+          <div class="nd-step-text">
             <b>Whisper.cpp</b>
-            <span>local transcription</span>
-          </div>
-          <div class="nd-arrow">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div class="nd-node">
-            <b>Tildo</b>
-            <span>pastes into your app</span>
+            <span>transcription · on your Mac · no network</span>
           </div>
         </div>
 
-        <div class="nd-divider"><span>internet boundary</span></div>
+        <div class="nd-conn"></div>
 
-        <div class="nd-zone-label internet">Optional — off by default</div>
-        <div class="nd-internet">
-          <div class="nd-node">
-            <b>Anthropic / OpenAI</b>
-            <span>only transcribed text · never audio</span>
-            <span class="nd-opt-badge">opt-in · your key</span>
+        <div class="nd-step">
+          <div class="nd-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.8" stroke-linecap="round"><path d="M9 12h6M9 16h4M5 20h14a2 2 0 0 0 2-2V8l-5-5H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/></svg>
+          </div>
+          <div class="nd-step-text">
+            <b>Pasted into your app</b>
+            <span>Mail, Slack, Xcode, Notes — anywhere</span>
           </div>
         </div>
+
+        <div class="nd-boundary"><span>internet · optional</span></div>
+
+        <div class="nd-opt-row">
+          <div class="nd-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="nd-step-text">
+            <b style="color:var(--text3)">LLM tone rewrite</b>
+            <span>text only · your key · off by default</span>
+          </div>
+          <span class="nd-tag">opt-in</span>
+        </div>
+
       </div>
     </div>
   </section>
