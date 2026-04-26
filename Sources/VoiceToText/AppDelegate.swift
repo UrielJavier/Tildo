@@ -628,11 +628,12 @@ recordingTargetURL = nil
                 audioData: audioData, language: appState.language.rawValue,
                 translate: false,
                 initialPrompt: appState.composedPrompt)
+            let rawText = text
             text = await postProcessIfEnabled(text, stylePrompt: resolvedStylePrompt())
             outputText(text)
             appState.status = .done
             appState.lastError = nil
-            appState.addToHistory(text, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
+            appState.addToHistory(text, rawText: rawText, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
             sendNotification(text: text)
             scheduleFinish()
         } catch {
@@ -763,7 +764,7 @@ recordingTargetURL = nil
                                 self.outputText(processed)
                             }
                             self.appState.status = .done
-                            self.appState.addToHistory(processed, durationSeconds: self.appState.recordingSeconds, translated: self.appState.llmTranslateLanguage != nil)
+                            self.appState.addToHistory(processed, rawText: finalText, durationSeconds: self.appState.recordingSeconds, translated: self.appState.llmTranslateLanguage != nil)
                             self.sendNotification(text: processed)
                             self.scheduleFinish()
                         }
@@ -815,7 +816,7 @@ recordingTargetURL = nil
                 usleep(50_000)
                 outputText(finalText)
             }
-            appState.addToHistory(finalText, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
+            appState.addToHistory(finalText, rawText: liveSessionText, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
             sendNotification(text: finalText)
             appState.status = .done
             scheduleFinish()
@@ -828,6 +829,7 @@ recordingTargetURL = nil
                 translate: false,
                 initialPrompt: appState.composedPrompt)
             liveSessionText += text
+            let rawLive = liveSessionText
             let finalText = await postProcessLiveSessionIfEnabled(stylePrompt: stylePrompt)
             if finalText != liveSessionText {
                 let oldLength = appState.applyReplacements(liveSessionText).count
@@ -838,7 +840,7 @@ recordingTargetURL = nil
             } else {
                 outputText(text)
             }
-            appState.addToHistory(finalText, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
+            appState.addToHistory(finalText, rawText: rawLive, durationSeconds: appState.recordingSeconds, translated: appState.llmTranslateLanguage != nil)
             sendNotification(text: finalText)
             appState.status = .done
             appState.lastError = nil

@@ -209,13 +209,34 @@ private struct HistoryEntryCard: View {
                 .buttonStyle(.plain)
             }
 
-            // Body: text, 4 lines max
+            // Body: processed text
             Text(entry.text)
                 .font(DS.Fonts.sans(13))
                 .foregroundStyle(DS.Colors.ink)
                 .lineSpacing(entry.text.count > 80 ? 3 : 0)
                 .lineLimit(4)
                 .textSelection(.enabled)
+
+            // Raw transcript (only when LLM modified it)
+            if let raw = entry.rawText {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 5) {
+                        Text("RAW")
+                            .font(DS.Fonts.mono(9.5, weight: .medium))
+                            .foregroundStyle(DS.Colors.ink4)
+                            .tracking(0.4)
+                        Rectangle()
+                            .fill(DS.Colors.lineSoft)
+                            .frame(height: 1)
+                    }
+                    Text(raw)
+                        .font(DS.Fonts.sans(12))
+                        .foregroundStyle(DS.Colors.ink4)
+                        .lineLimit(2)
+                        .textSelection(.enabled)
+                }
+                .padding(.top, 2)
+            }
 
             // Footer: stats + copy
             HStack(spacing: 0) {

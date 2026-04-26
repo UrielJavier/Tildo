@@ -149,12 +149,14 @@ final class AppState {
         VoiceToText.hotkeyLabel(keyCode: hotkeyKeyCode, modifiers: NSEvent.ModifierFlags(rawValue: hotkeyModifiers))
     }
 
-    func addToHistory(_ text: String, durationSeconds: Int = 0, translated: Bool = false) {
+    func addToHistory(_ text: String, rawText: String? = nil, durationSeconds: Int = 0, translated: Bool = false) {
         let trimmed = applyReplacements(text).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let wc = trimmed.split(whereSeparator: \.isWhitespace).count
+        let rawTrimmed = rawText.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         let entry = TranscriptionEntry(
             text: trimmed,
+            rawText: rawTrimmed != trimmed ? rawTrimmed : nil,
             durationSeconds: durationSeconds,
             wordCount: wc,
             mode: mode.rawValue,
