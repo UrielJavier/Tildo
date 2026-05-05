@@ -11,6 +11,7 @@ struct LLMPanel: View {
     @State private var anthropicModel = LLMProvider.anthropic.defaultModel
     @State private var openAIModel = LLMProvider.openAI.defaultModel
     @State private var cliModel = LLMProvider.claudeCode.defaultModel
+    @State private var ollamaModel = LLMProvider.ollama.defaultModel
     @State private var openModelDropdown: LLMProvider? = nil
     @State private var testingProvider: LLMProvider? = nil
     @State private var showKeyProvider: LLMProvider? = nil
@@ -103,6 +104,7 @@ struct LLMPanel: View {
         case .anthropic:  return "Anthropic · \(state.llmModel.isEmpty ? "Claude Haiku 4.5" : state.llmModel)"
         case .openAI:     return "OpenAI · \(state.llmModel.isEmpty ? "GPT-4o mini" : state.llmModel)"
         case .groq:       return "Groq · \(state.llmModel)"
+        case .ollama:     return "Ollama · \(state.llmModel.isEmpty ? "local" : state.llmModel)"
         }
     }
 
@@ -110,6 +112,8 @@ struct LLMPanel: View {
 
     private var providerCards: some View {
         VStack(spacing: 10) {
+            ollamaCard
+                .zIndex(openModelDropdown == .ollama ? 3 : 1)
             cliCard
                 .zIndex(openModelDropdown == .claudeCode ? 3 : 1)
             apiCard(
@@ -194,6 +198,60 @@ struct LLMPanel: View {
                         placeholder: placeholder,
                         onActivate: { Task { await activate(provider, key: keyBinding.wrappedValue, model: selectedModel.wrappedValue) } }
                     )
+                }
+            }
+        }
+    }
+
+    // MARK: - Ollama card
+
+    private var ollamaCard: some View {
+        let isActive = activeProvider == .ollama
+        let isTesting = testingProvider == .ollama
+        let dimmed = testingProvider != nil && !isTesting
+
+        return LLMCardShell(isActive: isActive, dimmed: dimmed) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
+                    LLMProviderLogo(symbol: "⬡", bg: Color(hex: "1c4166"), fg: .white)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text("Ollama")
+                                .font(.system(size: 13.5, weight: .semibold))
+                                .foregroundStyle(DS.Colors.ink)
+                            LLMNoAPIKeyBadge()
+                            if isActive { LLMActiveBadge() }
+                        }
+                        Text("localhost:11434")
+                            .font(DS.Fonts.mono(11))
+                            .foregroundStyle(DS.Colors.ink3)
+                        Text("Modelos locales sin API key. Instala Ollama y descarga el modelo con `ollama pull gemma4:e4b`.")
+                            .font(DS.Fonts.sans(12.5))
+                            .foregroundStyle(DS.Colors.ink2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 6)
+                    }
+                }
+                LLMModelPicker(
+                    provider: .ollama,
+                    selected: $ollamaModel,
+                    disabled: isTesting,
+                    isOpen: Binding(
+                        get: { openModelDropdown == .ollama },
+                        set: { openModelDropdown = $0 ? .ollama : nil }
+                    )
+                )
+                .zIndex(1)
+                if isTesting {
+                    LLMTestingRow(maskedKey: nil)
+                } else if isActive {
+                    LLMOllamaActiveRow(model: state.llmModel) {
+                        Task { await testOllama() }
+                    } onDeactivate: {
+                        deactivate()
+                    }
+                } else {
+                    LLMOllamaIdleRow { Task { await detectOllama() } }
                 }
             }
         }
@@ -301,6 +359,7 @@ struct LLMPanel: View {
         if activeProvider == .openAI, !state.llmModel.isEmpty { openAIModel = state.llmModel }
         if activeProvider == .claudeCode, !state.llmModel.isEmpty { cliModel = state.llmModel }
         if activeProvider == .claudeCode { cliPath = findCLIBinary() }
+        if activeProvider == .ollama, !state.llmModel.isEmpty { ollamaModel = state.llmModel }
     }
 
     private func activate(_ provider: LLMProvider, key: String, model: String) async {
@@ -372,6 +431,46 @@ struct LLMPanel: View {
         } catch {
             testingProvider = nil
             showToast(toastMessage(error, provider: .claudeCode))
+        }
+    }
+
+    private func detectOllama() async {
+        testingProvider = .ollama
+        guard let url = URL(string: "http://localhost:11434") else {
+            testingProvider = nil
+            showToast("URL de Ollama inválida.")
+            return
+        }
+        do {
+            let request = URLRequest(url: url, timeoutInterval: 4)
+            _ = try await URLSession.shared.data(for: request)
+            state.llmProvider = .ollama
+            state.llmModel = ollamaModel
+            state.llmPostProcessEnabled = true
+            testingProvider = nil
+            onSave()
+        } catch {
+            testingProvider = nil
+            showToast("No se encontró Ollama en localhost:11434. Instala Ollama desde ollama.com y ejecuta `ollama pull \(ollamaModel)`.")
+        }
+    }
+
+    private func testOllama() async {
+        testingProvider = .ollama
+        do {
+            let processor = TextPostProcessor()
+            _ = try await processor.process(
+                text: "ping",
+                provider: .ollama,
+                model: state.llmModel,
+                stylePrompt: "Reply with exactly: pong",
+                translateTo: nil
+            )
+            testingProvider = nil
+            showToast("Ollama connection successful.")
+        } catch {
+            testingProvider = nil
+            showToast(toastMessage(error, provider: .ollama))
         }
     }
 
@@ -723,6 +822,60 @@ private struct LLMCLIActiveRow: View {
             Group {
                 Text("detectado en ").foregroundStyle(DS.Colors.ink3) +
                 Text(path.isEmpty ? "/usr/local/bin/claude" : path).foregroundStyle(DS.Colors.mossInk)
+            }
+            .font(DS.Fonts.mono(11))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Test") { onTest() }
+                .buttonStyle(LLMGhostButton())
+            Button("Change") { onDeactivate() }
+                .buttonStyle(LLMGhostButton())
+                .padding(.trailing, 6)
+        }
+        .frame(height: 38)
+        .background(DS.Colors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color(hex: "DCE4CC"), lineWidth: 1))
+    }
+}
+
+private struct LLMOllamaIdleRow: View {
+    let onDetect: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 13))
+                .foregroundStyle(DS.Colors.ink4)
+            Text("Tildo buscará Ollama en localhost:11434.")
+                .font(DS.Fonts.sans(12))
+                .foregroundStyle(DS.Colors.ink2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Detect") { onDetect() }
+                .buttonStyle(LLMActivateButton())
+                .padding(.trailing, 6)
+        }
+        .frame(height: 38)
+        .padding(.horizontal, 12)
+        .background(DS.Colors.panel)
+        .clipShape(RoundedRectangle(cornerRadius: 7))
+        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(DS.Colors.lineSoft, lineWidth: 1))
+    }
+}
+
+private struct LLMOllamaActiveRow: View {
+    let model: String
+    let onTest: () -> Void
+    let onDeactivate: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(DS.Colors.moss)
+                .padding(.leading, 12)
+            Group {
+                Text("localhost:11434 · ").foregroundStyle(DS.Colors.ink3) +
+                Text(model).foregroundStyle(DS.Colors.mossInk)
             }
             .font(DS.Fonts.mono(11))
             .frame(maxWidth: .infinity, alignment: .leading)

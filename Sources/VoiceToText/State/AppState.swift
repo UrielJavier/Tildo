@@ -70,6 +70,8 @@ final class AppState {
     var appToneRules: [AppToneRule] = []
 
     // Transient UI — not persisted
+    var availableUpdate: String? = nil
+    var availableUpdateURL: String? = nil
     var ruleAddOpen: Bool = false
     var ruleEditing: AppRule? = nil
     var toneAddOpen: Bool = false

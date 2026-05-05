@@ -29,7 +29,7 @@ Auto-detects or you choose: English, Spanish, French, German, Italian, Portugues
 21 Whisper models from Tiny (32 MB) to Large v3 Turbo (1.6 GB). Download and switch from within the app. Quantized versions (Q5, Q8) give you a good balance of speed and accuracy.
 
 **LLM post-processing**
-Optionally pass transcribed text through an AI model to correct, reformat, or translate. Works with OpenAI, Anthropic, Groq, or Claude Code (no API key needed if you already have it installed).
+Optionally pass transcribed text through an AI model to correct, reformat, or translate. Works with **Ollama** (fully local, no API key), Claude Code, OpenAI, Anthropic, or Groq.
 
 **Per-app tones**
 Define custom AI instructions per application — formal in email, casual in Slack, technical in your IDE. URL-pattern matching for browsers.
@@ -83,6 +83,27 @@ Tildo needs two permissions to work:
 2. Toggle **Tildo** on
 
 > Without Accessibility, Tildo still transcribes — the text just won't be typed automatically. You can paste it manually with ⌘V (set Output to Clipboard in Settings).
+
+## Local LLM with Ollama
+
+Tildo can use any model running locally via [Ollama](https://ollama.com) — no API key, no internet, fully private.
+
+**Setup**
+
+1. Install Ollama from [ollama.com](https://ollama.com)
+2. Pull a model. Recommended for Apple Silicon:
+
+   ```bash
+   ollama pull gemma4:e4b   # ~3 GB, best quality/size balance
+   ollama pull gemma4:e2b   # ~1.5 GB, lighter option
+   ollama pull qwen3:4b     # ~2.4 GB, strong multilingual
+   ```
+
+3. In Tildo, go to **Settings → LLM**, and click **Detect** on the Ollama card.
+
+Ollama runs on `localhost:11434`. Tildo connects automatically — as long as Ollama is running in the background, everything works offline.
+
+> Tip: run `ollama list` to see which models you have installed, then type the model name directly in the model field.
 
 ## Build from source
 

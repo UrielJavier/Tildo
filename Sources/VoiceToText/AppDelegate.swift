@@ -44,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openMainWindow()
         }
         Task { await loadModel() }
+        UpdateChecker.shared.check(appState: appState)
         setupFrontmostAppTracking()
     }
 

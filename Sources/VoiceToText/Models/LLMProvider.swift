@@ -5,6 +5,7 @@ enum LLMProvider: String, CaseIterable, Codable {
     case openAI = "OpenAI"
     case anthropic = "Anthropic"
     case groq = "Groq"
+    case ollama = "Ollama"
 
     var baseURL: String {
         switch self {
@@ -12,6 +13,7 @@ enum LLMProvider: String, CaseIterable, Codable {
         case .openAI:     return "https://api.openai.com/v1/chat/completions"
         case .anthropic:  return "https://api.anthropic.com/v1/messages"
         case .groq:       return "https://api.groq.com/openai/v1/chat/completions"
+        case .ollama:     return "http://localhost:11434/v1/chat/completions"
         }
     }
 
@@ -21,6 +23,7 @@ enum LLMProvider: String, CaseIterable, Codable {
         case .openAI:     return "gpt-4o-mini"
         case .anthropic:  return "claude-haiku-4-5-20251001"
         case .groq:       return "llama-3.1-8b-instant"
+        case .ollama:     return "gemma4:e4b"
         }
     }
 
@@ -39,6 +42,8 @@ enum LLMProvider: String, CaseIterable, Codable {
             ]
         case .groq:
             return ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "gemma2-9b-it"]
+        case .ollama:
+            return ["gemma4:e4b", "gemma4:e2b", "qwen3:4b", "qwen3:1.7b", "llama3.2:3b", "phi4-mini"]
         }
     }
 
@@ -48,11 +53,15 @@ enum LLMProvider: String, CaseIterable, Codable {
         case .openAI:     return "OpenAI"
         case .anthropic:  return "Anthropic"
         case .groq:       return "Groq"
+        case .ollama:     return "Ollama"
         }
     }
 
     var requiresAPIKey: Bool {
-        self != .claudeCode
+        switch self {
+        case .claudeCode, .ollama: return false
+        default: return true
+        }
     }
 
     var keychainKey: String { "echowrite.llm.\(rawValue).apiKey" }

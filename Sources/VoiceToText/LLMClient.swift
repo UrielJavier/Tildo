@@ -120,6 +120,10 @@ actor LLMClient {
         case .openAI, .groq:
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
             request.httpBody = try openAIBody(text: text, systemPrompt: systemPrompt, model: model)
+        case .ollama:
+            // Ollama's OpenAI-compatible endpoint accepts any non-empty bearer token
+            request.setValue("Bearer ollama", forHTTPHeaderField: "Authorization")
+            request.httpBody = try openAIBody(text: text, systemPrompt: systemPrompt, model: model)
         case .anthropic:
             request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
             request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
@@ -165,7 +169,7 @@ actor LLMClient {
         switch provider {
         case .claudeCode:
             fatalError("Claude Code does not use HTTP response parsing")
-        case .openAI, .groq:
+        case .openAI, .groq, .ollama:
             guard let choices = json["choices"] as? [[String: Any]],
                   let first = choices.first,
                   let message = first["message"] as? [String: Any],

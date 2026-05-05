@@ -15,6 +15,11 @@ struct MenuContent: View {
 
             Rectangle().fill(DS.Colors.line).frame(height: 1)
 
+            if let version = state.availableUpdate, let urlString = state.availableUpdateURL {
+                UpdateBanner(version: version, urlString: urlString)
+                Rectangle().fill(DS.Colors.lineSoft).frame(height: 1)
+            }
+
             ToneRow(
                 state: state,
                 onRules: { appDelegate.openSettings(section: .atajos) },
@@ -311,6 +316,36 @@ private struct RecDot: View {
                     pulse = true
                 }
             }
+    }
+}
+
+private struct UpdateBanner: View {
+    let version: String
+    let urlString: String
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            if let url = URL(string: urlString) { NSWorkspace.shared.open(url) }
+        } label: {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(DS.Colors.moss)
+                    .frame(width: 6, height: 6)
+                Text("v\(version) available")
+                    .font(DS.Fonts.sans(12, weight: .medium))
+                    .foregroundStyle(DS.Colors.mossInk)
+                Spacer()
+                Text("download →")
+                    .font(DS.Fonts.mono(10.5))
+                    .foregroundStyle(DS.Colors.mossInk)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
+            .background(isHovered ? DS.Colors.moss.opacity(0.08) : DS.Colors.moss.opacity(0.04))
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
     }
 }
 

@@ -20,3 +20,7 @@ models/*.bin
 # Claude Code
 .claude/
 CLAUDE.md
+
+# Build outputs & release zips
+*.zip
+*.app/
